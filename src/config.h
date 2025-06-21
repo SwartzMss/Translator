@@ -29,6 +29,12 @@ namespace Config {
     inline constexpr const char* APP_VERSION_STR = "1.0.0";
     inline constexpr int WINDOW_WIDTH = 600;
     inline constexpr int WINDOW_HEIGHT = 400;
+    
+    // 日志配置
+    inline constexpr const char* LOG_FILE_PATH = "logs/translator.log";
+    inline constexpr const char* LOG_DATE_FORMAT = "yyyy-MM-dd hh:mm:ss.zzz";
+    inline constexpr int MAX_LOG_SIZE = 10 * 1024 * 1024; // 10MB
+    inline constexpr int MAX_LOG_FILES = 5;
 }
 
 #endif // CONFIG_H 

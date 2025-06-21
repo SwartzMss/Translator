@@ -15,13 +15,15 @@ DEFINES += APP_VERSION=\\\"1.0.0\\\"
 SOURCES += \
     src/main.cpp \
     src/mainwindow.cpp \
-    src/translator.cpp
+    src/translator.cpp \
+    src/logger.cpp
 
 # 头文件
 HEADERS += \
     src/mainwindow.h \
     src/translator.h \
-    src/config.h
+    src/config.h \
+    src/logger.h
 
 # UI文件
 FORMS += \
