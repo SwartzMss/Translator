@@ -8,6 +8,7 @@
 namespace Config {
     // 百度翻译API配置
     inline constexpr const char* BAIDU_API_URL = "https://fanyi-api.baidu.com/api/trans/vip/translate";
+    inline constexpr const char* BAIDU_QUOTA_URL = "https://fanyi-api.baidu.com/api/trans/vip/translate";
     inline constexpr const char* BAIDU_APP_ID = "YOUR_APP_ID";  // 需要用户配置
     inline constexpr const char* BAIDU_SECRET_KEY = "YOUR_SECRET_KEY";  // 需要用户配置
     

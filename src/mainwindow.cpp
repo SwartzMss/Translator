@@ -13,13 +13,23 @@
 #include <QFont>
 #include <QFontMetrics>
 #include <QMessageBox>
+#include <QSettings>
+#include <QCoreApplication>
+#include <QGuiApplication>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , m_translator(new Translator(this))
-    , m_settings(new QSettings("Translator", "TranslatorApp", this))
+    , m_settings(nullptr)
 {
-    LOG_INFO("主窗口初始化开始", "MainWindow");
+    LOG_DEBUG("主窗口构造函数开始", "MainWindow");
+    
+    // 设置配置文件路径到exe同级目录
+    QString exePath = QCoreApplication::applicationDirPath();
+    QString configPath = exePath + "/translator.ini";
+    m_settings = new QSettings(configPath, QSettings::IniFormat, this);
+    
+    LOG_INFO(QString("配置文件路径: %1").arg(configPath), "MainWindow");
     
     setupUi();
     setupConnections();
@@ -27,17 +37,17 @@ MainWindow::MainWindow(QWidget *parent)
     updateLanguageComboBoxes();
     
     // 设置窗口属性
-    setWindowTitle(QString::fromUtf8(Config::APP_NAME_STR) + " v" + QString::fromUtf8(Config::APP_VERSION_STR));
-    setMinimumSize(Config::WINDOW_WIDTH, Config::WINDOW_HEIGHT);
+    setWindowTitle("百度翻译工具");
+    setMinimumSize(600, 500);
     
-    // 居中显示
-    QScreen *screen = QApplication::primaryScreen();
+    // 居中显示窗口
+    QScreen *screen = QGuiApplication::primaryScreen();
     QRect screenGeometry = screen->geometry();
     int x = (screenGeometry.width() - width()) / 2;
     int y = (screenGeometry.height() - height()) / 2;
     move(x, y);
     
-    LOG_INFO("主窗口初始化完成", "MainWindow");
+    LOG_DEBUG("主窗口构造函数完成", "MainWindow");
     LOG_USER_ACTION("应用启动", "主窗口创建完成");
 }
 
@@ -57,6 +67,70 @@ void MainWindow::setupUi()
     m_mainLayout = new QVBoxLayout(m_centralWidget);
     m_mainLayout->setSpacing(10);
     m_mainLayout->setContentsMargins(15, 15, 15, 15);
+    
+    // API配置区域 - 直接显示在主窗口
+    QGroupBox *apiGroup = new QGroupBox("百度翻译API配置", this);
+    QVBoxLayout *apiLayout = new QVBoxLayout(apiGroup);
+    apiLayout->setSpacing(10);
+    
+    // App ID
+    QHBoxLayout *appIdLayout = new QHBoxLayout();
+    QLabel *appIdLabel = new QLabel("App ID:", this);
+    appIdLabel->setMinimumWidth(80);
+    m_appIdEdit = new QLineEdit(this);
+    m_appIdEdit->setPlaceholderText("请输入百度翻译API的App ID");
+    appIdLayout->addWidget(appIdLabel);
+    appIdLayout->addWidget(m_appIdEdit);
+    
+    // Secret Key
+    QHBoxLayout *secretKeyLayout = new QHBoxLayout();
+    QLabel *secretKeyLabel = new QLabel("Secret Key:", this);
+    secretKeyLabel->setMinimumWidth(80);
+    m_secretKeyEdit = new QLineEdit(this);
+    m_secretKeyEdit->setPlaceholderText("请输入百度翻译API的Secret Key");
+    m_secretKeyEdit->setEchoMode(QLineEdit::Password);
+    secretKeyLayout->addWidget(secretKeyLabel);
+    secretKeyLayout->addWidget(m_secretKeyEdit);
+    
+    // API配置按钮
+    QHBoxLayout *apiButtonLayout = new QHBoxLayout();
+    m_setApiButton = new QPushButton("设置并保存", this);
+    m_setApiButton->setStyleSheet(
+        "QPushButton {"
+        "    background-color: #28a745;"
+        "    color: white;"
+        "    border: none;"
+        "    border-radius: 5px;"
+        "    padding: 8px 15px;"
+        "    font-weight: bold;"
+        "}"
+        "QPushButton:hover {"
+        "    background-color: #218838;"
+        "}"
+    );
+    
+    m_testApiButton = new QPushButton("检测连接", this);
+    m_testApiButton->setStyleSheet(
+        "QPushButton {"
+        "    background-color: #17a2b8;"
+        "    color: white;"
+        "    border: none;"
+        "    border-radius: 5px;"
+        "    padding: 8px 15px;"
+        "    font-weight: bold;"
+        "}"
+        "QPushButton:hover {"
+        "    background-color: #138496;"
+        "}"
+    );
+    
+    apiButtonLayout->addWidget(m_setApiButton);
+    apiButtonLayout->addWidget(m_testApiButton);
+    apiButtonLayout->addStretch();
+    
+    apiLayout->addLayout(appIdLayout);
+    apiLayout->addLayout(secretKeyLayout);
+    apiLayout->addLayout(apiButtonLayout);
     
     // 输入区域
     m_inputLabel = new QLabel("输入要翻译的文本:", this);
@@ -132,19 +206,6 @@ void MainWindow::setupUi()
         "}"
     );
     
-    // 工具栏
-    QHBoxLayout *toolbarLayout = new QHBoxLayout();
-    
-    m_clearButton = new QPushButton("清空", this);
-    m_clearButton->setToolTip("清空输入和输出");
-    
-    m_settingsButton = new QPushButton("设置", this);
-    m_settingsButton->setToolTip("配置API密钥");
-    
-    toolbarLayout->addWidget(m_clearButton);
-    toolbarLayout->addWidget(m_settingsButton);
-    toolbarLayout->addStretch();
-    
     // 状态栏
     m_progressBar = new QProgressBar(this);
     m_progressBar->setVisible(false);
@@ -157,14 +218,14 @@ void MainWindow::setupUi()
     statusLayout->addWidget(m_progressBar);
     statusLayout->addWidget(m_statusLabel);
     
-    // 组装布局
+    // 组装布局 - API配置区域移到最上面
+    m_mainLayout->addWidget(apiGroup);
     m_mainLayout->addWidget(m_inputLabel);
     m_mainLayout->addWidget(m_inputTextEdit);
     m_mainLayout->addLayout(m_languageLayout);
     m_mainLayout->addWidget(m_translateButton);
     m_mainLayout->addWidget(m_outputLabel);
     m_mainLayout->addWidget(m_outputTextEdit);
-    m_mainLayout->addLayout(toolbarLayout);
     m_mainLayout->addLayout(statusLayout);
     
     // 设置样式
@@ -185,6 +246,48 @@ void MainWindow::setupUi()
         "    border-radius: 3px;"
         "    padding: 5px;"
         "    background-color: white;"
+        "    color: #333333;"
+        "    font-size: 10px;"
+        "}"
+        "QComboBox:hover {"
+        "    border: 1px solid #007bff;"
+        "}"
+        "QComboBox:focus {"
+        "    border: 2px solid #007bff;"
+        "}"
+        "QComboBox::drop-down {"
+        "    border: none;"
+        "    width: 20px;"
+        "}"
+        "QComboBox::down-arrow {"
+        "    image: none;"
+        "    border-left: 5px solid transparent;"
+        "    border-right: 5px solid transparent;"
+        "    border-top: 5px solid #666666;"
+        "    margin-right: 5px;"
+        "}"
+        "QComboBox QAbstractItemView {"
+        "    border: 1px solid #cccccc;"
+        "    border-radius: 3px;"
+        "    background-color: white;"
+        "    selection-background-color: #007bff;"
+        "    selection-color: white;"
+        "    outline: none;"
+        "}"
+        "QComboBox QAbstractItemView::item {"
+        "    padding: 8px 12px;"
+        "    border: none;"
+        "    background-color: transparent;"
+        "    color: #333333;"
+        "}"
+        "QComboBox QAbstractItemView::item:hover {"
+        "    background-color: #e3f2fd;"
+        "    color: #333333;"
+        "}"
+        "QComboBox QAbstractItemView::item:selected {"
+        "    background-color: #007bff;"
+        "    color: white;"
+        "    font-weight: bold;"
         "}"
         "QPushButton {"
         "    border: 1px solid #cccccc;"
@@ -195,6 +298,18 @@ void MainWindow::setupUi()
         "QPushButton:hover {"
         "    background-color: #e9ecef;"
         "}"
+        "QGroupBox {"
+        "    font-weight: bold;"
+        "    border: 1px solid #cccccc;"
+        "    border-radius: 5px;"
+        "    margin-top: 10px;"
+        "    padding-top: 10px;"
+        "}"
+        "QGroupBox::title {"
+        "    subcontrol-origin: margin;"
+        "    left: 10px;"
+        "    padding: 0 5px 0 5px;"
+        "}"
     );
     
     LOG_DEBUG("UI设置完成", "MainWindow");
@@ -204,16 +319,18 @@ void MainWindow::setupConnections()
 {
     LOG_DEBUG("开始设置信号连接", "MainWindow");
     
+    // 连接翻译器信号
+    connect(m_translator, &Translator::translationFinished,
+            this, &MainWindow::onTranslationFinished);
+    connect(m_translator, &Translator::translationError,
+            this, &MainWindow::onTranslationError);
+    
+    // 连接UI信号
     connect(m_translateButton, &QPushButton::clicked, this, &MainWindow::onTranslateClicked);
-    connect(m_clearButton, &QPushButton::clicked, this, &MainWindow::onClearClicked);
-    connect(m_settingsButton, &QPushButton::clicked, this, &MainWindow::onSettingsClicked);
+    connect(m_setApiButton, &QPushButton::clicked, this, &MainWindow::onSetApiClicked);
+    connect(m_testApiButton, &QPushButton::clicked, this, &MainWindow::onTestApiClicked);
     connect(m_swapButton, &QPushButton::clicked, this, &MainWindow::onSwapLanguagesClicked);
     
-    connect(m_translator, &Translator::translationFinished, 
-            this, &MainWindow::onTranslationFinished);
-    connect(m_translator, &Translator::translationError, 
-            this, &MainWindow::onTranslationError);
-            
     LOG_DEBUG("信号连接设置完成", "MainWindow");
 }
 
@@ -251,8 +368,8 @@ void MainWindow::onTranslateClicked()
     LOG_USER_ACTION("翻译按钮点击", QString("文本长度: %1, 从: %2, 到: %3").arg(text.length()).arg(fromLang).arg(toLang));
     
     if (!m_translator->isApiConfigured()) {
-        LOG_WARNING("API未配置，显示设置对话框", "MainWindow");
-        showSettingsDialog();
+        LOG_WARNING("API未配置", "MainWindow");
+        showError("请先配置API密钥");
         return;
     }
     
@@ -271,58 +388,95 @@ void MainWindow::onTranslateClicked()
 
 void MainWindow::onTranslationFinished(const QString &translatedText, const QString &detectedLang)
 {
-    LOG_INFO("翻译完成", "MainWindow");
+    LOG_DEBUG("翻译完成", "MainWindow");
     
-    m_outputTextEdit->setPlainText(translatedText);
-    
-    // 恢复UI状态
+    m_outputTextEdit->setText(translatedText);
+    m_progressBar->setVisible(false);
     m_translateButton->setEnabled(true);
     m_translateButton->setText("翻译");
-    m_progressBar->setVisible(false);
+    m_statusLabel->setText(QString("翻译完成 (检测语言: %1)").arg(detectedLang));
     
-    // 更新状态信息
-    QString detectedLangName = getLanguageName(detectedLang);
-    m_statusLabel->setText(QString("翻译完成 (检测到: %1)").arg(detectedLangName));
-    
-    // 如果源语言是自动检测，更新源语言选择
-    if (m_fromLanguageCombo->currentText() == "自动检测" && detectedLang != "auto") {
-        m_fromLanguageCombo->setCurrentText(detectedLangName);
-        LOG_DEBUG(QString("自动更新源语言为: %1").arg(detectedLangName), "MainWindow");
+    // 如果是API测试，恢复按钮状态
+    if (m_testApiButton->text() == "测试中...") {
+        m_testApiButton->setEnabled(true);
+        m_testApiButton->setText("检测连接");
+        
+        QString message = QString("API连接成功！\n测试翻译：你好 → %1\n检测语言：%2")
+                         .arg(translatedText)
+                         .arg(detectedLang);
+        showInfo(message);
     }
     
-    LOG_USER_ACTION("翻译完成", QString("检测语言: %1, 译文长度: %2").arg(detectedLangName).arg(translatedText.length()));
+    LOG_USER_ACTION("翻译完成", QString("翻译结果: %1").arg(translatedText.left(50)));
 }
 
 void MainWindow::onTranslationError(const QString &errorMessage)
 {
-    LOG_ERROR(QString("翻译错误: %1").arg(errorMessage), "MainWindow");
+    LOG_ERROR("翻译失败", errorMessage);
     
-    showError(errorMessage);
-    
-    // 恢复UI状态
+    m_progressBar->setVisible(false);
     m_translateButton->setEnabled(true);
     m_translateButton->setText("翻译");
-    m_progressBar->setVisible(false);
     m_statusLabel->setText("翻译失败");
+    
+    // 如果是API测试，恢复按钮状态
+    if (m_testApiButton->text() == "测试中...") {
+        m_testApiButton->setEnabled(true);
+        m_testApiButton->setText("检测连接");
+        showError("API连接失败：" + errorMessage);
+    } else {
+        showError("翻译失败：" + errorMessage);
+    }
     
     LOG_USER_ACTION("翻译失败", errorMessage);
 }
 
-void MainWindow::onClearClicked()
+void MainWindow::onSetApiClicked()
 {
-    LOG_USER_ACTION("清空按钮点击", "清空输入和输出");
+    QString appId = m_appIdEdit->text().trimmed();
+    QString secretKey = m_secretKeyEdit->text().trimmed();
     
-    m_inputTextEdit->clear();
-    m_outputTextEdit->clear();
-    m_statusLabel->setText("就绪");
+    if (appId.isEmpty() || secretKey.isEmpty()) {
+        showError("App ID和Secret Key不能为空");
+        return;
+    }
     
-    LOG_DEBUG("界面已清空", "MainWindow");
+    // 设置到翻译器
+    m_translator->setApiCredentials(appId, secretKey);
+    
+    // 保存到配置文件
+    m_settings->setValue("appId", appId);
+    m_settings->setValue("secretKey", secretKey);
+    
+    showInfo("API设置已保存并生效");
+    
+    LOG_USER_ACTION("API设置", "设置并保存API密钥");
+    LOG_SETTINGS_CHANGE("appId", "", appId);
+    LOG_SETTINGS_CHANGE("secretKey", "", secretKey);
 }
 
-void MainWindow::onSettingsClicked()
+void MainWindow::onTestApiClicked()
 {
-    LOG_USER_ACTION("设置按钮点击", "打开API设置对话框");
-    showSettingsDialog();
+    QString appId = m_appIdEdit->text().trimmed();
+    QString secretKey = m_secretKeyEdit->text().trimmed();
+    
+    if (appId.isEmpty() || secretKey.isEmpty()) {
+        showError("请先输入App ID和Secret Key");
+        return;
+    }
+    
+    // 临时设置API密钥进行测试
+    m_translator->setApiCredentials(appId, secretKey);
+    
+    // 开始测试翻译
+    m_testApiButton->setEnabled(false);
+    m_testApiButton->setText("测试中...");
+    m_statusLabel->setText("正在测试API连接...");
+    
+    LOG_USER_ACTION("API测试", "开始测试API连接");
+    
+    // 测试翻译"你好"为英文
+    m_translator->translateText("你好", "zh", "en");
 }
 
 void MainWindow::onSwapLanguagesClicked()
@@ -344,61 +498,53 @@ void MainWindow::onSwapLanguagesClicked()
     LOG_DEBUG("语言选择已交换", "MainWindow");
 }
 
-void MainWindow::showSettingsDialog()
-{
-    QString currentAppId = m_settings->value("appId", "").toString();
-    QString currentSecretKey = m_settings->value("secretKey", "").toString();
-    
-    bool ok;
-    QString appId = QInputDialog::getText(this, "API设置", 
-                                        "请输入百度翻译API的App ID:", 
-                                        QLineEdit::Normal, currentAppId, &ok);
-    if (!ok) {
-        LOG_USER_ACTION("设置对话框", "用户取消App ID输入");
-        return;
-    }
-    
-    QString secretKey = QInputDialog::getText(this, "API设置", 
-                                             "请输入百度翻译API的Secret Key:", 
-                                             QLineEdit::Password, currentSecretKey, &ok);
-    if (!ok) {
-        LOG_USER_ACTION("设置对话框", "用户取消Secret Key输入");
-        return;
-    }
-    
-    if (appId.trimmed().isEmpty() || secretKey.trimmed().isEmpty()) {
-        LOG_WARNING("API设置失败", "App ID或Secret Key为空");
-        showError("App ID和Secret Key不能为空");
-        return;
-    }
-    
-    m_translator->setApiCredentials(appId.trimmed(), secretKey.trimmed());
-    m_settings->setValue("appId", appId.trimmed());
-    m_settings->setValue("secretKey", secretKey.trimmed());
-    
-    LOG_USER_ACTION("API设置", "API密钥设置成功");
-    showInfo("API密钥设置成功！");
-}
-
 void MainWindow::loadSettings()
 {
-    LOG_DEBUG("加载应用设置", "MainWindow");
+    LOG_DEBUG("开始加载设置", "MainWindow");
     
+    // 加载API设置
     QString appId = m_settings->value("appId", "").toString();
     QString secretKey = m_settings->value("secretKey", "").toString();
     
+    m_appIdEdit->setText(appId);
+    m_secretKeyEdit->setText(secretKey);
+    
+    // 设置到翻译器
     if (!appId.isEmpty() && !secretKey.isEmpty()) {
         m_translator->setApiCredentials(appId, secretKey);
-        LOG_INFO("已加载保存的API设置", "MainWindow");
-    } else {
-        LOG_INFO("未找到保存的API设置", "MainWindow");
+        LOG_INFO("API设置已加载", "MainWindow");
     }
+    
+    // 加载语言设置
+    QString fromLang = m_settings->value("fromLanguage", "auto").toString();
+    QString toLang = m_settings->value("toLanguage", "en").toString();
+    
+    // 设置语言选择
+    int fromIndex = m_fromLanguageCombo->findData(fromLang);
+    if (fromIndex >= 0) {
+        m_fromLanguageCombo->setCurrentIndex(fromIndex);
+    }
+    
+    int toIndex = m_toLanguageCombo->findData(toLang);
+    if (toIndex >= 0) {
+        m_toLanguageCombo->setCurrentIndex(toIndex);
+    }
+    
+    LOG_DEBUG("设置加载完成", "MainWindow");
 }
 
 void MainWindow::saveSettings()
 {
-    LOG_DEBUG("保存应用设置", "MainWindow");
-    // 设置已在showSettingsDialog中保存
+    LOG_DEBUG("开始保存设置", "MainWindow");
+    
+    // 保存语言设置
+    QString fromLang = m_fromLanguageCombo->currentData().toString();
+    QString toLang = m_toLanguageCombo->currentData().toString();
+    
+    m_settings->setValue("fromLanguage", fromLang);
+    m_settings->setValue("toLanguage", toLang);
+    
+    LOG_DEBUG("设置保存完成", "MainWindow");
 }
 
 QString MainWindow::getLanguageCode(const QString &languageName)

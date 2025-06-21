@@ -13,7 +13,7 @@ class Translator : public QObject
     Q_OBJECT
 
 public:
-    explicit Translator(QObject *parent = nullptr);
+    Translator(QObject *parent = nullptr);
     ~Translator();
 
     // 翻译文本
@@ -33,7 +33,7 @@ signals:
     void translationError(const QString &errorMessage);
 
 private slots:
-    void onTranslationFinished();
+    void onTranslationFinished(QNetworkReply *reply);
     void onNetworkError(QNetworkReply::NetworkError error);
 
 private:

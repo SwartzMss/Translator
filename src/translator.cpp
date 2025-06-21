@@ -11,9 +11,6 @@ Translator::Translator(QObject *parent)
     : QObject(parent)
     , m_networkManager(new QNetworkAccessManager(this))
 {
-    connect(m_networkManager, &QNetworkAccessManager::finished,
-            this, &Translator::onTranslationFinished);
-    
     LOG_INFO("翻译器初始化完成", "Translator");
 }
 
@@ -24,22 +21,15 @@ Translator::~Translator()
 
 void Translator::setApiCredentials(const QString &appId, const QString &secretKey)
 {
-    QString oldAppId = m_appId;
-    QString oldSecretKey = m_secretKey;
-    
     m_appId = appId;
     m_secretKey = secretKey;
     
-    LOG_SETTINGS_CHANGE("appId", oldAppId, appId);
-    LOG_SETTINGS_CHANGE("secretKey", oldSecretKey, secretKey);
-    LOG_INFO("API密钥已设置", "Translator");
+    LOG_SETTINGS_CHANGE("API凭据", "设置新的API凭据", "App ID: " + appId.left(4) + "***");
 }
 
 bool Translator::isApiConfigured() const
 {
-    bool configured = !m_appId.isEmpty() && !m_secretKey.isEmpty();
-    LOG_DEBUG(QString("API配置检查: %1").arg(configured ? "已配置" : "未配置"), "Translator");
-    return configured;
+    return !m_appId.isEmpty() && !m_secretKey.isEmpty();
 }
 
 void Translator::translateText(const QString &text, const QString &fromLang, const QString &toLang)
@@ -81,6 +71,12 @@ void Translator::translateText(const QString &text, const QString &fromLang, con
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
 
     QNetworkReply *reply = m_networkManager->get(request);
+    
+    // 使用lambda表达式处理网络响应
+    connect(reply, &QNetworkReply::finished, [this, reply]() {
+        this->onTranslationFinished(reply);
+    });
+    
     connect(reply, &QNetworkReply::errorOccurred,
             this, &Translator::onNetworkError);
             
@@ -98,9 +94,8 @@ QString Translator::generateSignature(const QString &query, const QString &salt,
     return signature;
 }
 
-void Translator::onTranslationFinished()
+void Translator::onTranslationFinished(QNetworkReply *reply)
 {
-    QNetworkReply *reply = qobject_cast<QNetworkReply*>(sender());
     if (!reply) {
         LOG_ERROR("无法获取网络响应对象", "Translator");
         return;

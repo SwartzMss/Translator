@@ -9,6 +9,7 @@
 #include <QProgressBar>
 #include <QMessageBox>
 #include <QSettings>
+#include <QLineEdit>
 #include "translator.h"
 
 QT_BEGIN_NAMESPACE
@@ -29,8 +30,8 @@ private slots:
     void onTranslateClicked();
     void onTranslationFinished(const QString &translatedText, const QString &detectedLang);
     void onTranslationError(const QString &errorMessage);
-    void onSettingsClicked();
-    void onClearClicked();
+    void onSetApiClicked();
+    void onTestApiClicked();
     void onSwapLanguagesClicked();
 
 private:
@@ -38,7 +39,6 @@ private:
     void setupConnections();
     void loadSettings();
     void saveSettings();
-    void showSettingsDialog();
     void updateLanguageComboBoxes();
     QString getLanguageCode(const QString &languageName);
     QString getLanguageName(const QString &languageCode);
@@ -48,6 +48,12 @@ private:
     // UI组件
     QWidget *m_centralWidget;
     QVBoxLayout *m_mainLayout;
+    
+    // API配置区域
+    QLineEdit *m_appIdEdit;
+    QLineEdit *m_secretKeyEdit;
+    QPushButton *m_setApiButton;
+    QPushButton *m_testApiButton;
     
     // 输入区域
     QLabel *m_inputLabel;
@@ -71,10 +77,6 @@ private:
     // 状态栏
     QProgressBar *m_progressBar;
     QLabel *m_statusLabel;
-    
-    // 工具栏
-    QPushButton *m_clearButton;
-    QPushButton *m_settingsButton;
     
     // 翻译服务
     Translator *m_translator;
