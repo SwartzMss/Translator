@@ -1,0 +1,54 @@
+# 构建目录
+build/
+bin/
+lib/
+
+# Qt特定文件
+*.pro.user
+*.pro.user.*
+*.qbs.user
+*.qbs.user.*
+*.moc
+moc_*.cpp
+qrc_*.cpp
+ui_*.h
+Makefile*
+*build-*
+*.qm
+*.prl
+
+# qmake生成的文件
+Makefile
+Makefile.Debug
+Makefile.Release
+object_script.*
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.dylib
+*.app
+*.ipa
+*.apk
+
+# IDE文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 调试文件
+*.pdb
+*.ilk
+*.exp
+
+# 临时文件
+*.tmp
+*.temp
+*.log 
