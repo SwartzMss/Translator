@@ -22,14 +22,14 @@ MainWindow::MainWindow(QWidget *parent)
     , m_translator(new Translator(this))
     , m_settings(nullptr)
 {
-    LOG_DEBUG("主窗口构造函数开始", "MainWindow");
+    LOG_DEBUG("主窗口构造函数开始");
     
     // 设置配置文件路径到exe同级目录
     QString exePath = QCoreApplication::applicationDirPath();
     QString configPath = exePath + "/translator.ini";
     m_settings = new QSettings(configPath, QSettings::IniFormat, this);
     
-    LOG_INFO(QString("配置文件路径: %1").arg(configPath), "MainWindow");
+    LOG_INFO(QString("配置文件路径: %1").arg(configPath));
     
     setupUi();
     setupConnections();
@@ -47,19 +47,19 @@ MainWindow::MainWindow(QWidget *parent)
     int y = (screenGeometry.height() - height()) / 2;
     move(x, y);
     
-    LOG_DEBUG("主窗口构造函数完成", "MainWindow");
-    LOG_USER_ACTION("应用启动", "主窗口创建完成");
+    LOG_DEBUG("主窗口构造函数完成");
+    LOG_INFO("应用启动 - 主窗口创建完成");
 }
 
 MainWindow::~MainWindow()
 {
-    LOG_INFO("主窗口销毁", "MainWindow");
+    LOG_INFO("主窗口销毁");
     saveSettings();
 }
 
 void MainWindow::setupUi()
 {
-    LOG_DEBUG("开始设置UI", "MainWindow");
+    LOG_DEBUG("开始设置UI");
     
     m_centralWidget = new QWidget(this);
     setCentralWidget(m_centralWidget);
@@ -312,12 +312,12 @@ void MainWindow::setupUi()
         "}"
     );
     
-    LOG_DEBUG("UI设置完成", "MainWindow");
+    LOG_DEBUG("UI设置完成");
 }
 
 void MainWindow::setupConnections()
 {
-    LOG_DEBUG("开始设置信号连接", "MainWindow");
+    LOG_DEBUG("开始设置信号连接");
     
     // 连接翻译器信号
     connect(m_translator, &Translator::translationFinished,
@@ -331,12 +331,12 @@ void MainWindow::setupConnections()
     connect(m_testApiButton, &QPushButton::clicked, this, &MainWindow::onTestApiClicked);
     connect(m_swapButton, &QPushButton::clicked, this, &MainWindow::onSwapLanguagesClicked);
     
-    LOG_DEBUG("信号连接设置完成", "MainWindow");
+    LOG_DEBUG("信号连接设置完成");
 }
 
 void MainWindow::updateLanguageComboBoxes()
 {
-    LOG_DEBUG("更新语言选择框", "MainWindow");
+    LOG_DEBUG("更新语言选择框");
     
     m_fromLanguageCombo->clear();
     m_toLanguageCombo->clear();
@@ -350,14 +350,14 @@ void MainWindow::updateLanguageComboBoxes()
     m_fromLanguageCombo->setCurrentText("自动检测");
     m_toLanguageCombo->setCurrentText("英语");
     
-    LOG_INFO(QString("语言选择框已更新，支持 %1 种语言").arg(Config::LANGUAGE_NAMES.size()), "MainWindow");
+    LOG_INFO(QString("语言选择框已更新，支持 %1 种语言").arg(Config::LANGUAGE_NAMES.size()));
 }
 
 void MainWindow::onTranslateClicked()
 {
     QString text = m_inputTextEdit->toPlainText().trimmed();
     if (text.isEmpty()) {
-        LOG_USER_ACTION("翻译按钮点击", "输入文本为空");
+        LOG_INFO("翻译按钮点击 - 输入文本为空");
         showError("请输入要翻译的文本");
         return;
     }
@@ -365,10 +365,10 @@ void MainWindow::onTranslateClicked()
     QString fromLang = getLanguageCode(m_fromLanguageCombo->currentText());
     QString toLang = getLanguageCode(m_toLanguageCombo->currentText());
     
-    LOG_USER_ACTION("翻译按钮点击", QString("文本长度: %1, 从: %2, 到: %3").arg(text.length()).arg(fromLang).arg(toLang));
+    LOG_INFO(QString("翻译按钮点击 - 文本长度: %1, 从: %2, 到: %3").arg(text.length()).arg(fromLang).arg(toLang));
     
     if (!m_translator->isApiConfigured()) {
-        LOG_WARNING("API未配置", "MainWindow");
+        LOG_WARNING("API未配置");
         showError("请先配置API密钥");
         return;
     }
@@ -380,7 +380,7 @@ void MainWindow::onTranslateClicked()
     m_progressBar->setRange(0, 0); // 无限进度条
     m_statusLabel->setText("正在翻译...");
     
-    LOG_INFO("开始翻译请求", "MainWindow");
+    LOG_INFO("开始翻译请求");
     
     // 开始翻译
     m_translator->translateText(text, fromLang, toLang);
@@ -388,7 +388,7 @@ void MainWindow::onTranslateClicked()
 
 void MainWindow::onTranslationFinished(const QString &translatedText, const QString &detectedLang)
 {
-    LOG_DEBUG("翻译完成", "MainWindow");
+    LOG_DEBUG("翻译完成");
     
     m_outputTextEdit->setText(translatedText);
     m_progressBar->setVisible(false);
@@ -407,12 +407,12 @@ void MainWindow::onTranslationFinished(const QString &translatedText, const QStr
         showInfo(message);
     }
     
-    LOG_USER_ACTION("翻译完成", QString("翻译结果: %1").arg(translatedText.left(50)));
+    LOG_INFO(QString("翻译完成 - 翻译结果: %1").arg(translatedText.left(50)));
 }
 
 void MainWindow::onTranslationError(const QString &errorMessage)
 {
-    LOG_ERROR("翻译失败", errorMessage);
+    LOG_ERROR(QString("翻译失败: %1").arg(errorMessage));
     
     m_progressBar->setVisible(false);
     m_translateButton->setEnabled(true);
@@ -428,7 +428,7 @@ void MainWindow::onTranslationError(const QString &errorMessage)
         showError("翻译失败：" + errorMessage);
     }
     
-    LOG_USER_ACTION("翻译失败", errorMessage);
+    LOG_INFO(QString("翻译失败 - %1").arg(errorMessage));
 }
 
 void MainWindow::onSetApiClicked()
@@ -450,9 +450,9 @@ void MainWindow::onSetApiClicked()
     
     showInfo("API设置已保存并生效");
     
-    LOG_USER_ACTION("API设置", "设置并保存API密钥");
-    LOG_SETTINGS_CHANGE("appId", "", appId);
-    LOG_SETTINGS_CHANGE("secretKey", "", secretKey);
+    LOG_INFO("API设置 - 设置并保存API密钥");
+    LOG_INFO(QString("appId: %1***").arg(appId.left(4)));
+    LOG_INFO("secretKey: ******");
 }
 
 void MainWindow::onTestApiClicked()
@@ -473,7 +473,7 @@ void MainWindow::onTestApiClicked()
     m_testApiButton->setText("测试中...");
     m_statusLabel->setText("正在测试API连接...");
     
-    LOG_USER_ACTION("API测试", "开始测试API连接");
+    LOG_INFO("API测试 - 开始测试API连接");
     
     // 测试翻译"你好"为英文
     m_translator->translateText("你好", "zh", "en");
@@ -486,7 +486,7 @@ void MainWindow::onSwapLanguagesClicked()
     
     // 避免交换自动检测
     if (fromText == "自动检测") {
-        LOG_WARNING("尝试交换自动检测语言", "MainWindow");
+        LOG_WARNING("尝试交换自动检测语言");
         showInfo("自动检测模式无法交换语言");
         return;
     }
@@ -494,13 +494,13 @@ void MainWindow::onSwapLanguagesClicked()
     m_fromLanguageCombo->setCurrentText(toText);
     m_toLanguageCombo->setCurrentText(fromText);
     
-    LOG_USER_ACTION("语言交换", QString("从 %1 交换到 %2").arg(fromText).arg(toText));
-    LOG_DEBUG("语言选择已交换", "MainWindow");
+    LOG_INFO(QString("语言交换 - 从 %1 交换到 %2").arg(fromText).arg(toText));
+    LOG_DEBUG("语言选择已交换");
 }
 
 void MainWindow::loadSettings()
 {
-    LOG_DEBUG("开始加载设置", "MainWindow");
+    LOG_DEBUG("开始加载设置");
     
     // 加载API设置
     QString appId = m_settings->value("appId", "").toString();
@@ -512,7 +512,7 @@ void MainWindow::loadSettings()
     // 设置到翻译器
     if (!appId.isEmpty() && !secretKey.isEmpty()) {
         m_translator->setApiCredentials(appId, secretKey);
-        LOG_INFO("API设置已加载", "MainWindow");
+        LOG_INFO("API设置已加载");
     }
     
     // 加载语言设置
@@ -530,12 +530,12 @@ void MainWindow::loadSettings()
         m_toLanguageCombo->setCurrentIndex(toIndex);
     }
     
-    LOG_DEBUG("设置加载完成", "MainWindow");
+    LOG_DEBUG("设置加载完成");
 }
 
 void MainWindow::saveSettings()
 {
-    LOG_DEBUG("开始保存设置", "MainWindow");
+    LOG_DEBUG("开始保存设置");
     
     // 保存语言设置
     QString fromLang = m_fromLanguageCombo->currentData().toString();
@@ -544,7 +544,7 @@ void MainWindow::saveSettings()
     m_settings->setValue("fromLanguage", fromLang);
     m_settings->setValue("toLanguage", toLang);
     
-    LOG_DEBUG("设置保存完成", "MainWindow");
+    LOG_DEBUG("设置保存完成");
 }
 
 QString MainWindow::getLanguageCode(const QString &languageName)
@@ -567,12 +567,12 @@ QString MainWindow::getLanguageName(const QString &languageCode)
 
 void MainWindow::showError(const QString &message)
 {
-    LOG_ERROR(QString("显示错误对话框: %1").arg(message), "MainWindow");
+    LOG_ERROR(QString("显示错误对话框: %1").arg(message));
     QMessageBox::critical(this, "错误", message);
 }
 
 void MainWindow::showInfo(const QString &message)
 {
-    LOG_INFO(QString("显示信息对话框: %1").arg(message), "MainWindow");
+    LOG_INFO(QString("显示信息对话框: %1").arg(message));
     QMessageBox::information(this, "提示", message);
 } 

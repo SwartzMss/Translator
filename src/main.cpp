@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
     Logger::instance()->setLogToFile(true);
     Logger::instance()->setLogToConsole(true);
     
-    LOG_INFO("应用程序启动", "Main");
+    LOG_INFO("应用程序启动");
     
     // 设置应用信息
     app.setApplicationName(Config::APP_NAME_STR);
@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
     // 设置应用样式
     app.setStyle(QStyleFactory::create("Fusion"));
     
-    LOG_INFO("创建主窗口", "Main");
+    LOG_INFO("创建主窗口");
     
     // 创建并显示主窗口
     MainWindow window;
@@ -61,11 +61,11 @@ int main(int argc, char *argv[])
 
     window.show();
     
-    LOG_INFO("主窗口显示完成，进入事件循环", "Main");
+    LOG_INFO("主窗口显示完成，进入事件循环");
     
     int result = app.exec();
     
-    LOG_INFO("应用程序退出", "Main");
+    LOG_INFO("应用程序退出");
     
     return result;
 } 

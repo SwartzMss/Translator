@@ -4,6 +4,8 @@
 #include <QCoreApplication>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QThread>
+#include <QFileInfo>
 
 Logger* Logger::m_instance = nullptr;
 QMutex Logger::m_mutex;
@@ -28,13 +30,13 @@ Logger::Logger(QObject *parent)
         }
     }
     
-    info("日志系统初始化完成", "Logger");
+    info("日志系统初始化完成", __FILE__, __LINE__);
 }
 
 Logger::~Logger()
 {
     if (m_logFile.isOpen()) {
-        info("日志系统关闭", "Logger");
+        info("日志系统关闭", __FILE__, __LINE__);
         m_logFile.close();
     }
 }
@@ -50,92 +52,43 @@ Logger* Logger::instance()
     return m_instance;
 }
 
-void Logger::debug(const QString &message, const QString &module)
+void Logger::debug(const QString &message,
+                   const char *file, int line)
 {
-    writeLog(LOG_DEBUG, message, module);
+    writeLog(LOG_DEBUG, message, file, line);
 }
 
-void Logger::info(const QString &message, const QString &module)
+void Logger::info(const QString &message,
+                  const char *file, int line)
 {
-    writeLog(LOG_INFO, message, module);
+    writeLog(LOG_INFO, message, file, line);
 }
 
-void Logger::warning(const QString &message, const QString &module)
+void Logger::warning(const QString &message,
+                     const char *file, int line)
 {
-    writeLog(LOG_WARNING, message, module);
+    writeLog(LOG_WARNING, message, file, line);
 }
 
-void Logger::error(const QString &message, const QString &module)
+void Logger::error(const QString &message,
+                   const char *file, int line)
 {
-    writeLog(LOG_ERROR, message, module);
+    writeLog(LOG_ERROR, message, file, line);
 }
 
-void Logger::critical(const QString &message, const QString &module)
+void Logger::critical(const QString &message,
+                      const char *file, int line)
 {
-    writeLog(LOG_CRITICAL, message, module);
+    writeLog(LOG_CRITICAL, message, file, line);
 }
 
-void Logger::logTranslationStart(const QString &text, const QString &fromLang, const QString &toLang)
-{
-    QString message = QString("开始翻译 - 文本长度: %1, 从: %2, 到: %3")
-                     .arg(text.length()).arg(fromLang).arg(toLang);
-    info(message, "Translation");
-}
 
-void Logger::logTranslationSuccess(const QString &originalText, const QString &translatedText, 
-                                  const QString &fromLang, const QString &toLang, const QString &detectedLang)
-{
-    QString message = QString("翻译成功 - 原文长度: %1, 译文长度: %2, 检测语言: %3")
-                     .arg(originalText.length()).arg(translatedText.length()).arg(detectedLang);
-    info(message, "Translation");
-}
-
-void Logger::logTranslationError(const QString &text, const QString &error, const QString &fromLang, const QString &toLang)
-{
-    QString message = QString("翻译失败 - 文本长度: %1, 错误: %2")
-                     .arg(text.length()).arg(error);
-    this->error(message, "Translation");
-}
-
-void Logger::logApiCall(const QString &url, const QString &params)
-{
-    QString message = QString("API调用 - URL: %1, 参数长度: %2")
-                     .arg(url).arg(params.length());
-    debug(message, "API");
-}
-
-void Logger::logApiResponse(const QString &response, bool success)
-{
-    QString message = QString("API响应 - 成功: %1, 响应长度: %2")
-                     .arg(success ? "是" : "否").arg(response.length());
-    
-    if (success) {
-        debug(message, "API");
-    } else {
-        error(message, "API");
-    }
-}
-
-void Logger::logUserAction(const QString &action, const QString &details)
-{
-    QString message = QString("用户操作 - %1: %2").arg(action).arg(details);
-    info(message, "UserAction");
-}
-
-void Logger::logSettingsChange(const QString &setting, const QString &oldValue, const QString &newValue)
-{
-    QString message = QString("设置变更 - %1: %2 -> %3")
-                     .arg(setting)
-                     .arg(oldValue.isEmpty() ? "空" : "***")
-                     .arg(newValue.isEmpty() ? "空" : "***");
-    info(message, "Settings");
-}
-
-void Logger::writeLog(LogLevel level, const QString &message, const QString &module)
+void Logger::writeLog(LogLevel level, const QString &message,
+                      const char *file, int line)
 {
     if (level < m_currentLevel) return;
-    
-    QString formattedMessage = formatMessage(level, message, module);
+
+    QString formattedMessage = formatMessage(level, message, file, line);
     
     QMutexLocker locker(&m_writeMutex);
     
@@ -168,13 +121,24 @@ QString Logger::levelToString(LogLevel level)
     }
 }
 
-QString Logger::formatMessage(LogLevel level, const QString &message, const QString &module)
+QString Logger::formatMessage(LogLevel level, const QString &message,
+                              const char *file, int line)
 {
     QString timestamp = QDateTime::currentDateTime().toString(QString::fromUtf8(Config::LOG_DATE_FORMAT));
     QString levelStr = levelToString(level);
-    
-    return QString("[%1] [%2] [%3] %4")
-           .arg(timestamp).arg(levelStr).arg(module).arg(message);
+    QString threadId = QString::number(reinterpret_cast<quintptr>(QThread::currentThreadId()));
+    QString fileName;
+    if (file) {
+        fileName = QFileInfo(QString::fromUtf8(file)).fileName();
+    }
+
+    return QString("[%1] [%2] [%3:%4] [T:%5] %6")
+           .arg(timestamp)
+           .arg(levelStr)
+           .arg(fileName)
+           .arg(line)
+           .arg(threadId)
+           .arg(message);
 }
 
 void Logger::ensureLogDirectory()

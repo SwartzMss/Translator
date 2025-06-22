@@ -11,12 +11,12 @@ Translator::Translator(QObject *parent)
     : QObject(parent)
     , m_networkManager(new QNetworkAccessManager(this))
 {
-    LOG_INFO("翻译器初始化完成", "Translator");
+    LOG_INFO("翻译器初始化完成");
 }
 
 Translator::~Translator()
 {
-    LOG_INFO("翻译器销毁", "Translator");
+    LOG_INFO("翻译器销毁");
 }
 
 void Translator::setApiCredentials(const QString &appId, const QString &secretKey)
@@ -24,7 +24,7 @@ void Translator::setApiCredentials(const QString &appId, const QString &secretKe
     m_appId = appId;
     m_secretKey = secretKey;
     
-    LOG_SETTINGS_CHANGE("API凭据", "设置新的API凭据", "App ID: " + appId.left(4) + "***");
+    LOG_INFO(QString("设置新的API凭据 - App ID: %1***").arg(appId.left(4)));
 }
 
 bool Translator::isApiConfigured() const
@@ -34,18 +34,21 @@ bool Translator::isApiConfigured() const
 
 void Translator::translateText(const QString &text, const QString &fromLang, const QString &toLang)
 {
-    LOG_TRANSLATION_START(text, fromLang, toLang);
+    LOG_INFO(QString("开始翻译 - 文本长度: %1, 从: %2, 到: %3")
+             .arg(text.length()).arg(fromLang).arg(toLang));
     
     if (!isApiConfigured()) {
         QString errorMsg = "请先配置百度翻译API密钥";
-        LOG_TRANSLATION_ERROR(text, errorMsg, fromLang, toLang);
+        LOG_ERROR(QString("翻译失败 - 文本长度: %1, 错误: %2")
+                  .arg(text.length()).arg(errorMsg));
         emit translationError(errorMsg);
         return;
     }
 
     if (text.trimmed().isEmpty()) {
         QString errorMsg = "请输入要翻译的文本";
-        LOG_TRANSLATION_ERROR(text, errorMsg, fromLang, toLang);
+        LOG_ERROR(QString("翻译失败 - 文本长度: %1, 错误: %2")
+                  .arg(text.length()).arg(errorMsg));
         emit translationError(errorMsg);
         return;
     }
@@ -65,7 +68,8 @@ void Translator::translateText(const QString &text, const QString &fromLang, con
     url.setQuery(query);
 
     QString params = query.toString();
-    LOG_API_CALL(url.toString(), params);
+    LOG_DEBUG(QString("API调用 - URL: %1, 参数长度: %2")
+              .arg(url.toString()).arg(params.length()));
 
     QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
@@ -80,7 +84,7 @@ void Translator::translateText(const QString &text, const QString &fromLang, con
     connect(reply, &QNetworkReply::errorOccurred,
             this, &Translator::onNetworkError);
             
-    LOG_INFO("网络请求已发送", "Translator");
+    LOG_INFO("网络请求已发送");
 }
 
 QString Translator::generateSignature(const QString &query, const QString &salt, 
@@ -90,14 +94,15 @@ QString Translator::generateSignature(const QString &query, const QString &salt,
     QByteArray hash = QCryptographicHash::hash(signStr.toUtf8(), QCryptographicHash::Md5);
     QString signature = hash.toHex();
     
-    LOG_DEBUG(QString("生成签名 - 原文长度: %1, 签名: %2...").arg(signStr.length()).arg(signature.left(8)), "Translator");
+    LOG_DEBUG(QString("生成签名 - 原文长度: %1, 签名: %2...")
+              .arg(signStr.length()).arg(signature.left(8)));
     return signature;
 }
 
 void Translator::onTranslationFinished(QNetworkReply *reply)
 {
     if (!reply) {
-        LOG_ERROR("无法获取网络响应对象", "Translator");
+        LOG_ERROR("无法获取网络响应对象");
         return;
     }
 
@@ -105,8 +110,7 @@ void Translator::onTranslationFinished(QNetworkReply *reply)
 
     if (reply->error() != QNetworkReply::NoError) {
         QString errorMsg = "网络请求失败: " + reply->errorString();
-        LOG_TRANSLATION_ERROR("", errorMsg, "", "");
-        LOG_API_RESPONSE("", false);
+        LOG_ERROR(QString("翻译失败: %1").arg(errorMsg));
         emit translationError(errorMsg);
         return;
     }
@@ -114,8 +118,7 @@ void Translator::onTranslationFinished(QNetworkReply *reply)
     QByteArray data = reply->readAll();
     QString response = QString::fromUtf8(data);
     
-    LOG_API_RESPONSE(response, true);
-    LOG_DEBUG(QString("收到API响应，长度: %1").arg(response.length()), "Translator");
+    LOG_DEBUG(QString("API响应 - 成功, 长度: %1").arg(response.length()));
     
     parseTranslationResult(data);
 }
@@ -124,7 +127,7 @@ void Translator::onNetworkError(QNetworkReply::NetworkError error)
 {
     QNetworkReply *reply = qobject_cast<QNetworkReply*>(sender());
     if (!reply) {
-        LOG_ERROR("无法获取网络错误响应对象", "Translator");
+        LOG_ERROR("无法获取网络错误响应对象");
         return;
     }
 
@@ -147,7 +150,7 @@ void Translator::onNetworkError(QNetworkReply::NetworkError error)
         break;
     }
 
-    LOG_ERROR(QString("网络错误: %1").arg(errorMsg), "Translator");
+    LOG_ERROR(QString("网络错误: %1").arg(errorMsg));
     emit translationError(errorMsg);
 }
 
@@ -158,7 +161,7 @@ void Translator::parseTranslationResult(const QByteArray &data)
     
     if (parseError.error != QJsonParseError::NoError) {
         QString errorMsg = "解析响应数据失败: " + parseError.errorString();
-        LOG_TRANSLATION_ERROR("", errorMsg, "", "");
+        LOG_ERROR(QString("翻译失败: %1").arg(errorMsg));
         emit translationError(errorMsg);
         return;
     }
@@ -186,7 +189,7 @@ void Translator::parseTranslationResult(const QByteArray &data)
         default: userFriendlyMsg = QString("API错误 %1: %2").arg(errorCode).arg(errorMsg); break;
         }
         
-        LOG_TRANSLATION_ERROR("", userFriendlyMsg, "", "");
+        LOG_ERROR(QString("翻译失败: %1").arg(userFriendlyMsg));
         emit translationError(userFriendlyMsg);
         return;
     }
@@ -199,13 +202,14 @@ void Translator::parseTranslationResult(const QByteArray &data)
             QString translatedText = firstResult["dst"].toString();
             QString detectedLang = obj["from"].toString();
             
-            LOG_TRANSLATION_SUCCESS("", translatedText, "", "", detectedLang);
+            LOG_INFO(QString("翻译成功 - 检测语言: %1, 译文长度: %2")
+                     .arg(detectedLang).arg(translatedText.length()));
             emit translationFinished(translatedText, detectedLang);
             return;
         }
     }
 
     QString errorMsg = "无法解析翻译结果";
-    LOG_TRANSLATION_ERROR("", errorMsg, "", "");
+    LOG_ERROR(QString("翻译失败: %1").arg(errorMsg));
     emit translationError(errorMsg);
 } 
