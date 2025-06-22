@@ -43,6 +43,6 @@ jobs:
       with:
         name: Translator
         path: |
-          release/*.exe
-          release/*.dll
+          bin/release/*.exe
+          bin/release/*.dll
         retention-days: 30 
