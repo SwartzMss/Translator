@@ -36,9 +36,9 @@ MainWindow::MainWindow(QWidget *parent)
     LOG_INFO(QString("配置文件路径: %1").arg(configPath));
     
     setupUi();
-    setupConnections();
-    loadSettings();
     updateLanguageComboBoxes();
+    loadSettings();
+    setupConnections();
     createTrayIcon();
 
     // 设置窗口属性
@@ -355,9 +355,9 @@ void MainWindow::updateLanguageComboBoxes()
         m_toLanguageCombo->addItem(Config::LANGUAGE_NAMES[i], Config::SUPPORTED_LANGUAGES[i]);
     }
     
-    // 设置默认语言
-    m_fromLanguageCombo->setCurrentText("自动检测");
-    m_toLanguageCombo->setCurrentText("英语");
+    // 设置默认语言：英文 -> 中文
+    m_fromLanguageCombo->setCurrentText("英语");
+    m_toLanguageCombo->setCurrentText("中文");
     
     LOG_INFO(QString("语言选择框已更新，支持 %1 种语言").arg(Config::LANGUAGE_NAMES.size()));
 }
@@ -524,9 +524,9 @@ void MainWindow::loadSettings()
         LOG_INFO("API设置已加载");
     }
     
-    // 加载语言设置
-    QString fromLang = m_settings->value("fromLanguage", "auto").toString();
-    QString toLang = m_settings->value("toLanguage", "en").toString();
+    // 加载语言设置，默认为英文 -> 中文
+    QString fromLang = m_settings->value("fromLanguage", "en").toString();
+    QString toLang = m_settings->value("toLanguage", "zh").toString();
     
     // 设置语言选择
     int fromIndex = m_fromLanguageCombo->findData(fromLang);
@@ -632,9 +632,6 @@ void MainWindow::closeEvent(QCloseEvent *event)
 {
     if (m_trayIcon && m_trayIcon->isVisible()) {
         hide();
-        m_trayIcon->showMessage(tr("Translator"),
-                               tr("应用已最小化到托盘，双击图标以重新打开"),
-                               QSystemTrayIcon::Information, 2000);
         event->ignore();
     } else {
         event->accept();
