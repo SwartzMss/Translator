@@ -16,6 +16,9 @@
 #include <QSettings>
 #include <QCoreApplication>
 #include <QGuiApplication>
+#include <QSystemTrayIcon>
+#include <QMenu>
+#include <QAction>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -35,6 +38,7 @@ MainWindow::MainWindow(QWidget *parent)
     setupConnections();
     loadSettings();
     updateLanguageComboBoxes();
+    createTrayIcon();
     
     // 设置窗口属性
     setWindowTitle("百度翻译工具");
@@ -575,4 +579,46 @@ void MainWindow::showInfo(const QString &message)
 {
     LOG_INFO(QString("显示信息对话框: %1").arg(message));
     QMessageBox::information(this, "提示", message);
-} 
+}
+
+void MainWindow::createTrayIcon()
+{
+    m_trayIcon = new QSystemTrayIcon(QIcon(":/icon.ico"), this);
+
+    m_trayMenu = new QMenu(this);
+    m_showAction = new QAction(tr("显示"), this);
+    m_exitAction = new QAction(tr("退出"), this);
+
+    m_trayMenu->addAction(m_showAction);
+    m_trayMenu->addSeparator();
+    m_trayMenu->addAction(m_exitAction);
+
+    m_trayIcon->setContextMenu(m_trayMenu);
+    m_trayIcon->setToolTip(tr("Translator"));
+    m_trayIcon->show();
+
+    connect(m_trayIcon, &QSystemTrayIcon::activated,
+            this, &MainWindow::onTrayActivated);
+    connect(m_showAction, &QAction::triggered,
+            this, &MainWindow::onShowTriggered);
+    connect(m_exitAction, &QAction::triggered,
+            this, &MainWindow::onExitTriggered);
+}
+
+void MainWindow::onTrayActivated(QSystemTrayIcon::ActivationReason reason)
+{
+    if (reason == QSystemTrayIcon::Trigger) {
+        onShowTriggered();
+    }
+}
+
+void MainWindow::onShowTriggered()
+{
+    this->showNormal();
+    this->activateWindow();
+}
+
+void MainWindow::onExitTriggered()
+{
+    qApp->quit();
+}

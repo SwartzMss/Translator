@@ -25,6 +25,10 @@ HEADERS += \
     src/config.h \
     src/logger.h
 
+# 资源文件
+RESOURCES += \
+    resources/resources.qrc
+
 # UI文件
 FORMS += \
     ui/mainwindow.ui
@@ -35,7 +39,7 @@ DESTDIR = $$PWD/bin
 # Windows特定配置
 win32 {
     # Windows特定配置
-    # RC_ICONS = resources/icon.ico
+    RC_ICONS = resources/icon.ico
     # VERSION = 1.0.0.0
     QMAKE_TARGET_COMPANY = "Translator"
     QMAKE_TARGET_PRODUCT = "Translator"
