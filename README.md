@@ -10,6 +10,9 @@
 - 错误提示（网络异常、配额超限等）
 - 语言交换功能
 - 设置保存功能
+- 单实例运行，避免重复启动
+- 系统托盘，可在后台常驻
+- 内置日志记录，日志文件位于 `logs/translator.log`
 
 ## 支持的语言
 
@@ -51,6 +54,22 @@
 4. 运行应用，点击"设置"按钮
 5. 输入 App ID 和 Secret Key
 6. 点击确定保存配置
+7. 配置信息会保存到程序目录下的 `translator.ini`
+
+## 构建与运行
+
+1. 确保已安装 Qt6（建议 6.5 及以上版本）
+2. 克隆仓库并进入目录
+   ```bash
+   git clone https://github.com/yourname/Translator.git
+   cd Translator
+   ```
+3. 使用 qmake 或在 Qt Creator 中打开 `Translator.pro` 进行构建
+   ```bash
+   qmake Translator.pro
+   make
+   ```
+4. 运行生成的可执行文件，在顶部区域输入并保存 App ID 和 Secret Key 后即可开始翻译
 
 ## 项目结构
 
