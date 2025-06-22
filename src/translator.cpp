@@ -198,13 +198,20 @@ void Translator::parseTranslationResult(const QByteArray &data)
     if (obj.contains("trans_result")) {
         QJsonArray transResult = obj["trans_result"].toArray();
         if (!transResult.isEmpty()) {
-            QJsonObject firstResult = transResult.first().toObject();
-            QString translatedText = firstResult["dst"].toString();
+            QStringList translatedTexts;
+            for (const QJsonValue &value : transResult) {
+                if (value.isObject()) {
+                    QJsonObject resultObj = value.toObject();
+                    translatedTexts.append(resultObj["dst"].toString());
+                }
+            }
+
+            QString combinedText = translatedTexts.join('\n');
             QString detectedLang = obj["from"].toString();
-            
+
             LOG_INFO(QString("翻译成功 - 检测语言: %1, 译文长度: %2")
-                     .arg(detectedLang).arg(translatedText.length()));
-            emit translationFinished(translatedText, detectedLang);
+                     .arg(detectedLang).arg(combinedText.length()));
+            emit translationFinished(combinedText, detectedLang);
             return;
         }
     }
