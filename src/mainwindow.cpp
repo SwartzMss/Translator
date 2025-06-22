@@ -19,6 +19,7 @@
 #include <QSystemTrayIcon>
 #include <QMenu>
 #include <QAction>
+#include <QCloseEvent>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -39,10 +40,14 @@ MainWindow::MainWindow(QWidget *parent)
     loadSettings();
     updateLanguageComboBoxes();
     createTrayIcon();
-    
+
     // 设置窗口属性
     setWindowTitle("百度翻译工具");
     setMinimumSize(600, 500);
+    Qt::WindowFlags flags = windowFlags();
+    flags &= ~Qt::WindowMinimizeButtonHint;
+    flags &= ~Qt::WindowMaximizeButtonHint;
+    setWindowFlags(flags);
     
     // 居中显示窗口
     QScreen *screen = QGuiApplication::primaryScreen();
@@ -607,7 +612,7 @@ void MainWindow::createTrayIcon()
 
 void MainWindow::onTrayActivated(QSystemTrayIcon::ActivationReason reason)
 {
-    if (reason == QSystemTrayIcon::Trigger) {
+    if (reason == QSystemTrayIcon::DoubleClick) {
         onShowTriggered();
     }
 }
@@ -621,4 +626,17 @@ void MainWindow::onShowTriggered()
 void MainWindow::onExitTriggered()
 {
     qApp->quit();
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    if (m_trayIcon && m_trayIcon->isVisible()) {
+        hide();
+        m_trayIcon->showMessage(tr("Translator"),
+                               tr("应用已最小化到托盘，双击图标以重新打开"),
+                               QSystemTrayIcon::Information, 2000);
+        event->ignore();
+    } else {
+        event->accept();
+    }
 }
