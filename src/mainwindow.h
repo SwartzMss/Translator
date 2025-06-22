@@ -10,6 +10,9 @@
 #include <QMessageBox>
 #include <QSettings>
 #include <QLineEdit>
+#include <QSystemTrayIcon>
+#include <QMenu>
+#include <QAction>
 #include "translator.h"
 
 QT_BEGIN_NAMESPACE
@@ -33,6 +36,9 @@ private slots:
     void onSetApiClicked();
     void onTestApiClicked();
     void onSwapLanguagesClicked();
+    void onTrayActivated(QSystemTrayIcon::ActivationReason reason);
+    void onShowTriggered();
+    void onExitTriggered();
 
 private:
     void setupUi();
@@ -44,6 +50,7 @@ private:
     QString getLanguageName(const QString &languageCode);
     void showError(const QString &message);
     void showInfo(const QString &message);
+    void createTrayIcon();
 
     // UI组件
     QWidget *m_centralWidget;
@@ -83,6 +90,12 @@ private:
     
     // 设置
     QSettings *m_settings;
+
+    // 系统托盘
+    QSystemTrayIcon *m_trayIcon;
+    QMenu *m_trayMenu;
+    QAction *m_showAction;
+    QAction *m_exitAction;
 };
 
 #endif // MAINWINDOW_H 
