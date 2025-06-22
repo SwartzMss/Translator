@@ -25,21 +25,17 @@ public:
     static Logger* instance();
     
     // 日志记录方法
-    void debug(const QString &message, const QString &module = "General");
-    void info(const QString &message, const QString &module = "General");
-    void warning(const QString &message, const QString &module = "General");
-    void error(const QString &message, const QString &module = "General");
-    void critical(const QString &message, const QString &module = "General");
-    
-    // 业务流程日志
-    void logTranslationStart(const QString &text, const QString &fromLang, const QString &toLang);
-    void logTranslationSuccess(const QString &originalText, const QString &translatedText, 
-                              const QString &fromLang, const QString &toLang, const QString &detectedLang);
-    void logTranslationError(const QString &text, const QString &error, const QString &fromLang, const QString &toLang);
-    void logApiCall(const QString &url, const QString &params);
-    void logApiResponse(const QString &response, bool success);
-    void logUserAction(const QString &action, const QString &details = "");
-    void logSettingsChange(const QString &setting, const QString &oldValue, const QString &newValue);
+    void debug(const QString &message,
+               const char *file = nullptr, int line = 0);
+    void info(const QString &message,
+              const char *file = nullptr, int line = 0);
+    void warning(const QString &message,
+                 const char *file = nullptr, int line = 0);
+    void error(const QString &message,
+               const char *file = nullptr, int line = 0);
+    void critical(const QString &message,
+                  const char *file = nullptr, int line = 0);
+
     
     // 配置方法
     void setLogLevel(LogLevel level);
@@ -54,9 +50,11 @@ private:
     explicit Logger(QObject *parent = nullptr);
     ~Logger();
     
-    void writeLog(LogLevel level, const QString &message, const QString &module);
+    void writeLog(LogLevel level, const QString &message,
+                  const char *file, int line);
     QString levelToString(LogLevel level);
-    QString formatMessage(LogLevel level, const QString &message, const QString &module);
+    QString formatMessage(LogLevel level, const QString &message,
+                          const char *file, int line);
     void ensureLogDirectory();
     
     static Logger* m_instance;
@@ -75,18 +73,15 @@ private:
 };
 
 // 便捷宏定义
-#define LOG_DEBUG(msg, module) Logger::instance()->debug(msg, module)
-#define LOG_INFO(msg, module) Logger::instance()->info(msg, module)
-#define LOG_WARNING(msg, module) Logger::instance()->warning(msg, module)
-#define LOG_ERROR(msg, module) Logger::instance()->error(msg, module)
-#define LOG_CRITICAL(msg, module) Logger::instance()->critical(msg, module)
-
-#define LOG_TRANSLATION_START(text, from, to) Logger::instance()->logTranslationStart(text, from, to)
-#define LOG_TRANSLATION_SUCCESS(orig, trans, from, to, detected) Logger::instance()->logTranslationSuccess(orig, trans, from, to, detected)
-#define LOG_TRANSLATION_ERROR(text, error, from, to) Logger::instance()->logTranslationError(text, error, from, to)
-#define LOG_API_CALL(url, params) Logger::instance()->logApiCall(url, params)
-#define LOG_API_RESPONSE(response, success) Logger::instance()->logApiResponse(response, success)
-#define LOG_USER_ACTION(action, details) Logger::instance()->logUserAction(action, details)
-#define LOG_SETTINGS_CHANGE(setting, oldVal, newVal) Logger::instance()->logSettingsChange(setting, oldVal, newVal)
+#define LOG_DEBUG(msg) \
+    Logger::instance()->debug(msg, __FILE__, __LINE__)
+#define LOG_INFO(msg) \
+    Logger::instance()->info(msg, __FILE__, __LINE__)
+#define LOG_WARNING(msg) \
+    Logger::instance()->warning(msg, __FILE__, __LINE__)
+#define LOG_ERROR(msg) \
+    Logger::instance()->error(msg, __FILE__, __LINE__)
+#define LOG_CRITICAL(msg) \
+    Logger::instance()->critical(msg, __FILE__, __LINE__)
 
 #endif // LOGGER_H 
