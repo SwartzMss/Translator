@@ -40,25 +40,25 @@ jobs:
     - name: Copy DLLs
       shell: cmd
       run: |
-        windeployqt --release --qmldir . release\Translator.exe
+        windeployqt --release --qmldir . bin\release\Translator.exe
 
     - name: Cleanup Release Directory
       shell: powershell
       run: |
-        Get-ChildItem -Path release -Recurse -Filter *.obj | Remove-Item -Force -ErrorAction SilentlyContinue
-        Get-ChildItem -Path release -Recurse -Filter *.cpp | Remove-Item -Force -ErrorAction SilentlyContinue
-        Get-ChildItem -Path release -Recurse -Filter *.h | Remove-Item -Force -ErrorAction SilentlyContinue
-        Get-ChildItem -Path release -Recurse -Filter *.qrc | Remove-Item -Force -ErrorAction SilentlyContinue
-        Get-ChildItem -Path release -Recurse -Filter *.qml | Remove-Item -Force -ErrorAction SilentlyContinue
-        Get-ChildItem -Path release -Recurse -Filter *.ui | Remove-Item -Force -ErrorAction SilentlyContinue
-        Get-ChildItem -Path release -Recurse -Filter *.qm | Remove-Item -Force -ErrorAction SilentlyContinue
-        Get-ChildItem -Path release -Recurse -Filter *.qmldir | Remove-Item -Force -ErrorAction SilentlyContinue
-        Get-ChildItem -Path release -Recurse -Filter *.qmltypes | Remove-Item -Force -ErrorAction SilentlyContinue
+        Get-ChildItem -Path bin/release -Recurse -Filter *.obj | Remove-Item -Force -ErrorAction SilentlyContinue
+        Get-ChildItem -Path bin/release -Recurse -Filter *.cpp | Remove-Item -Force -ErrorAction SilentlyContinue
+        Get-ChildItem -Path bin/release -Recurse -Filter *.h | Remove-Item -Force -ErrorAction SilentlyContinue
+        Get-ChildItem -Path bin/release -Recurse -Filter *.qrc | Remove-Item -Force -ErrorAction SilentlyContinue
+        Get-ChildItem -Path bin/release -Recurse -Filter *.qml | Remove-Item -Force -ErrorAction SilentlyContinue
+        Get-ChildItem -Path bin/release -Recurse -Filter *.ui | Remove-Item -Force -ErrorAction SilentlyContinue
+        Get-ChildItem -Path bin/release -Recurse -Filter *.qm | Remove-Item -Force -ErrorAction SilentlyContinue
+        Get-ChildItem -Path bin/release -Recurse -Filter *.qmldir | Remove-Item -Force -ErrorAction SilentlyContinue
+        Get-ChildItem -Path bin/release -Recurse -Filter *.qmltypes | Remove-Item -Force -ErrorAction SilentlyContinue
 
     - name: Compress Release
       shell: cmd
       run: |
-        powershell Compress-Archive -Path release\* -DestinationPath release.zip
+        powershell Compress-Archive -Path bin\release\* -DestinationPath release.zip
         
     - name: Upload Release
       uses: actions/upload-artifact@v4
@@ -67,21 +67,6 @@ jobs:
         path: release.zip
         retention-days: 30 
 
-    - name: Get existing Release upload URL
-      id: get_release
-      uses: actions/github-script@v6
-      with:
-        script: |
-          const tag = context.ref.startsWith("refs/tags/") ? context.ref.substring("refs/tags/".length) : context.ref;
-          core.info(`Using tag: ${tag}`);
-          const release = await github.rest.repos.getReleaseByTag({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            tag: tag
-          });
-          const uploadUrl = release.data.upload_url; // 不要去掉 {?name,label}
-          core.info(`Found release with upload_url: ${uploadUrl}`);
-          return uploadUrl;
 
     - name: Debug GITHUB_TOKEN
       shell: powershell
