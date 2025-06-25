@@ -3,6 +3,7 @@
 #include "logger.h"
 #include <QNetworkRequest>
 #include <QJsonParseError>
+#include <QJsonArray>
 
 DeepSeekClient::DeepSeekClient(QObject *parent)
     : QObject(parent)
@@ -42,10 +43,18 @@ void DeepSeekClient::polishText(const QString &text)
     QUrl url(QString::fromUtf8(Config::DEEPSEEK_API_URL));
     QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    request.setRawHeader("Authorization", QString("Bearer %1").arg(m_apiKey).toUtf8());
 
     QJsonObject payload;
-    payload["prompt"] = QString::fromUtf8(Config::DEEPSEEK_PROMPT) + text;
-    payload["api_key"] = m_apiKey;
+    payload["model"] = "deepseek-chat";
+    payload["messages"] = QJsonArray{
+        QJsonObject{
+            {"role", "user"},
+            {"content", QString::fromUtf8(Config::DEEPSEEK_PROMPT) + " " + text}
+        }
+    };
+    payload["max_tokens"] = 2000;
+    payload["temperature"] = 0.7;
 
     QByteArray data = QJsonDocument(payload).toJson();
 
@@ -92,12 +101,36 @@ void DeepSeekClient::onPolishFinished(QNetworkReply *reply)
 
     QJsonObject obj = doc.object();
     QString resultText;
-    if (obj.contains("text")) {
-        resultText = obj["text"].toString();
-    } else if (obj.contains("result")) {
-        resultText = obj["result"].toString();
-    } else {
-        resultText = QString::fromUtf8(data);
+    
+    // 检查是否有错误
+    if (obj.contains("error")) {
+        QString errorMsg = "API错误: " + obj["error"].toObject()["message"].toString();
+        LOG_ERROR(QString("润色失败: %1").arg(errorMsg));
+        emit polishError(errorMsg);
+        return;
+    }
+    
+    // 解析标准 OpenAI 兼容格式的响应
+    if (obj.contains("choices") && obj["choices"].isArray()) {
+        QJsonArray choices = obj["choices"].toArray();
+        if (!choices.isEmpty()) {
+            QJsonObject choice = choices.first().toObject();
+            if (choice.contains("message")) {
+                QJsonObject message = choice["message"].toObject();
+                resultText = message["content"].toString();
+            }
+        }
+    }
+    
+    // 如果没有找到标准格式，尝试其他可能的字段
+    if (resultText.isEmpty()) {
+        if (obj.contains("text")) {
+            resultText = obj["text"].toString();
+        } else if (obj.contains("result")) {
+            resultText = obj["result"].toString();
+        } else {
+            resultText = QString::fromUtf8(data);
+        }
     }
 
     LOG_INFO("润色成功");

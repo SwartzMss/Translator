@@ -13,9 +13,9 @@ namespace Config {
     inline constexpr const char* BAIDU_SECRET_KEY = "YOUR_SECRET_KEY";  // 需要用户配置
 
     // DeepSeek润色API配置
-    inline constexpr const char* DEEPSEEK_API_URL = "https://api.deepseek.com/v1/polish";
+    inline constexpr const char* DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions";
     // Default prompt for polishing English text
-    inline constexpr const char* DEEPSEEK_PROMPT = "Please polish the following English text:";
+    inline constexpr const char* DEEPSEEK_PROMPT = "Please polish the following English sentence. Only output the polished sentence itself, without any prefix, suffix, explanation, or formatting. Do not add any extra words or lines.";
     inline constexpr const char* DEEPSEEK_KEY = "YOUR_DEEPSEEK_KEY";  // 需要用户配置
     
     // 支持的语言列表
