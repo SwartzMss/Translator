@@ -20,10 +20,12 @@
 #include <QMenu>
 #include <QAction>
 #include <QCloseEvent>
+#include "deepseekclient.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , m_translator(new Translator(this))
+    , m_polisher(new DeepSeekClient(this))
     , m_settings(nullptr)
 {
     LOG_DEBUG("主窗口构造函数开始");
@@ -78,7 +80,7 @@ void MainWindow::setupUi()
     m_mainLayout->setContentsMargins(15, 15, 15, 15);
     
     // API配置区域 - 直接显示在主窗口
-    QGroupBox *apiGroup = new QGroupBox("百度翻译API配置", this);
+    QGroupBox *apiGroup = new QGroupBox("API配置", this);
     QVBoxLayout *apiLayout = new QVBoxLayout(apiGroup);
     apiLayout->setSpacing(10);
     
@@ -100,6 +102,16 @@ void MainWindow::setupUi()
     m_secretKeyEdit->setEchoMode(QLineEdit::Password);
     secretKeyLayout->addWidget(secretKeyLabel);
     secretKeyLayout->addWidget(m_secretKeyEdit);
+
+    // DeepSeek Key
+    QHBoxLayout *deepSeekLayout = new QHBoxLayout();
+    QLabel *deepSeekLabel = new QLabel("DeepSeek Key:", this);
+    deepSeekLabel->setMinimumWidth(80);
+    m_deepSeekKeyEdit = new QLineEdit(this);
+    m_deepSeekKeyEdit->setPlaceholderText("请输入DeepSeek API Key");
+    m_deepSeekKeyEdit->setEchoMode(QLineEdit::Password);
+    deepSeekLayout->addWidget(deepSeekLabel);
+    deepSeekLayout->addWidget(m_deepSeekKeyEdit);
     
     // API配置按钮
     QHBoxLayout *apiButtonLayout = new QHBoxLayout();
@@ -139,6 +151,7 @@ void MainWindow::setupUi()
     
     apiLayout->addLayout(appIdLayout);
     apiLayout->addLayout(secretKeyLayout);
+    apiLayout->addLayout(deepSeekLayout);
     apiLayout->addLayout(apiButtonLayout);
     
     // 输入区域
@@ -174,7 +187,7 @@ void MainWindow::setupUi()
     m_languageLayout->addWidget(m_toLanguageCombo);
     m_languageLayout->addStretch();
     
-    // 翻译按钮
+    // 操作按钮
     m_translateButton = new QPushButton("翻译", this);
     m_translateButton->setFont(QFont("Microsoft YaHei", 12, QFont::Bold));
     m_translateButton->setMinimumHeight(40);
@@ -191,6 +204,29 @@ void MainWindow::setupUi()
         "}"
         "QPushButton:pressed {"
         "    background-color: #3d8b40;"
+        "}"
+        "QPushButton:disabled {"
+        "    background-color: #cccccc;"
+        "    color: #666666;"
+        "}"
+    );
+
+    m_polishButton = new QPushButton("润色", this);
+    m_polishButton->setFont(QFont("Microsoft YaHei", 12, QFont::Bold));
+    m_polishButton->setMinimumHeight(40);
+    m_polishButton->setStyleSheet(
+        "QPushButton {"
+        "    background-color: #007bff;"
+        "    color: white;"
+        "    border: none;"
+        "    border-radius: 5px;"
+        "    padding: 10px;"
+        "}"
+        "QPushButton:hover {"
+        "    background-color: #0069d9;"
+        "}"
+        "QPushButton:pressed {"
+        "    background-color: #005cbf;"
         "}"
         "QPushButton:disabled {"
         "    background-color: #cccccc;"
@@ -232,7 +268,11 @@ void MainWindow::setupUi()
     m_mainLayout->addWidget(m_inputLabel);
     m_mainLayout->addWidget(m_inputTextEdit);
     m_mainLayout->addLayout(m_languageLayout);
-    m_mainLayout->addWidget(m_translateButton);
+    QHBoxLayout *buttonLayout = new QHBoxLayout();
+    buttonLayout->addWidget(m_translateButton);
+    buttonLayout->addWidget(m_polishButton);
+    buttonLayout->addStretch();
+    m_mainLayout->addLayout(buttonLayout);
     m_mainLayout->addWidget(m_outputLabel);
     m_mainLayout->addWidget(m_outputTextEdit);
     m_mainLayout->addLayout(statusLayout);
@@ -333,9 +373,14 @@ void MainWindow::setupConnections()
             this, &MainWindow::onTranslationFinished);
     connect(m_translator, &Translator::translationError,
             this, &MainWindow::onTranslationError);
+    connect(m_polisher, &DeepSeekClient::polishFinished,
+            this, &MainWindow::onPolishFinished);
+    connect(m_polisher, &DeepSeekClient::polishError,
+            this, &MainWindow::onPolishError);
     
     // 连接UI信号
     connect(m_translateButton, &QPushButton::clicked, this, &MainWindow::onTranslateClicked);
+    connect(m_polishButton, &QPushButton::clicked, this, &MainWindow::onPolishClicked);
     connect(m_setApiButton, &QPushButton::clicked, this, &MainWindow::onSetApiClicked);
     connect(m_testApiButton, &QPushButton::clicked, this, &MainWindow::onTestApiClicked);
     connect(m_swapButton, &QPushButton::clicked, this, &MainWindow::onSwapLanguagesClicked);
@@ -385,6 +430,7 @@ void MainWindow::onTranslateClicked()
     // 更新UI状态
     m_translateButton->setEnabled(false);
     m_translateButton->setText("翻译中...");
+    m_polishButton->setEnabled(false);
     m_progressBar->setVisible(true);
     m_progressBar->setRange(0, 0); // 无限进度条
     m_statusLabel->setText("正在翻译...");
@@ -395,6 +441,32 @@ void MainWindow::onTranslateClicked()
     m_translator->translateText(text, fromLang, toLang);
 }
 
+void MainWindow::onPolishClicked()
+{
+    QString text = m_inputTextEdit->toPlainText().trimmed();
+    if (text.isEmpty()) {
+        showError("请输入要润色的文本");
+        return;
+    }
+
+    QString apiKey = m_deepSeekKeyEdit->text().trimmed();
+    if (apiKey.isEmpty()) {
+        showError("请先配置DeepSeek Key");
+        return;
+    }
+
+    m_polisher->setApiKey(apiKey);
+
+    m_polishButton->setEnabled(false);
+    m_polishButton->setText("润色中...");
+    m_translateButton->setEnabled(false);
+    m_progressBar->setVisible(true);
+    m_progressBar->setRange(0, 0);
+    m_statusLabel->setText("正在润色...");
+
+    m_polisher->polishText(text);
+}
+
 void MainWindow::onTranslationFinished(const QString &translatedText, const QString &detectedLang)
 {
     LOG_DEBUG("翻译完成");
@@ -403,6 +475,7 @@ void MainWindow::onTranslationFinished(const QString &translatedText, const QStr
     m_progressBar->setVisible(false);
     m_translateButton->setEnabled(true);
     m_translateButton->setText("翻译");
+    m_polishButton->setEnabled(true);
     m_statusLabel->setText(QString("翻译完成 (检测语言: %1)").arg(detectedLang));
     
     // 如果是API测试，恢复按钮状态
@@ -426,6 +499,7 @@ void MainWindow::onTranslationError(const QString &errorMessage)
     m_progressBar->setVisible(false);
     m_translateButton->setEnabled(true);
     m_translateButton->setText("翻译");
+    m_polishButton->setEnabled(true);
     m_statusLabel->setText("翻译失败");
     
     // 如果是API测试，恢复按钮状态
@@ -440,28 +514,56 @@ void MainWindow::onTranslationError(const QString &errorMessage)
     LOG_INFO(QString("翻译失败 - %1").arg(errorMessage));
 }
 
+void MainWindow::onPolishFinished(const QString &polishedText)
+{
+    m_outputTextEdit->setText(polishedText);
+    m_progressBar->setVisible(false);
+    m_translateButton->setEnabled(true);
+    m_polishButton->setEnabled(true);
+    m_polishButton->setText("润色");
+    m_statusLabel->setText("润色完成");
+}
+
+void MainWindow::onPolishError(const QString &errorMessage)
+{
+    m_progressBar->setVisible(false);
+    m_translateButton->setEnabled(true);
+    m_polishButton->setEnabled(true);
+    m_polishButton->setText("润色");
+    m_statusLabel->setText("润色失败");
+    showError("润色失败：" + errorMessage);
+}
+
 void MainWindow::onSetApiClicked()
 {
     QString appId = m_appIdEdit->text().trimmed();
     QString secretKey = m_secretKeyEdit->text().trimmed();
-    
+    QString deepSeekKey = m_deepSeekKeyEdit->text().trimmed();
+
     if (appId.isEmpty() || secretKey.isEmpty()) {
         showError("App ID和Secret Key不能为空");
         return;
     }
-    
+
     // 设置到翻译器
     m_translator->setApiCredentials(appId, secretKey);
+
+    // DeepSeek Key 可选
+    if (!deepSeekKey.isEmpty()) {
+        m_polisher->setApiKey(deepSeekKey);
+    }
     
     // 保存到配置文件
     m_settings->setValue("appId", appId);
     m_settings->setValue("secretKey", secretKey);
+    m_settings->setValue("deepSeekKey", deepSeekKey);
     
     showInfo("API设置已保存并生效");
     
     LOG_INFO("API设置 - 设置并保存API密钥");
     LOG_INFO(QString("appId: %1***").arg(appId.left(4)));
     LOG_INFO("secretKey: ******");
+    LOG_INFO("deepSeekKey: ******");
 }
 
 void MainWindow::onTestApiClicked()
@@ -514,14 +616,19 @@ void MainWindow::loadSettings()
     // 加载API设置
     QString appId = m_settings->value("appId", "").toString();
     QString secretKey = m_settings->value("secretKey", "").toString();
+    QString deepSeekKey = m_settings->value("deepSeekKey", "").toString();
     
     m_appIdEdit->setText(appId);
     m_secretKeyEdit->setText(secretKey);
+    m_deepSeekKeyEdit->setText(deepSeekKey);
     
     // 设置到翻译器
     if (!appId.isEmpty() && !secretKey.isEmpty()) {
         m_translator->setApiCredentials(appId, secretKey);
         LOG_INFO("API设置已加载");
+    }
+    if (!deepSeekKey.isEmpty()) {
+        m_polisher->setApiKey(deepSeekKey);
     }
     
     // 加载语言设置，默认为英文 -> 中文

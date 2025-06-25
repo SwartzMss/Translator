@@ -16,14 +16,16 @@ SOURCES += \
     src/main.cpp \
     src/mainwindow.cpp \
     src/translator.cpp \
-    src/logger.cpp
+    src/logger.cpp \
+    src/deepseekclient.cpp
 
 # 头文件
 HEADERS += \
     src/mainwindow.h \
     src/translator.h \
     src/config.h \
-    src/logger.h
+    src/logger.h \
+    src/deepseekclient.h
 
 # 资源文件
 RESOURCES += \
