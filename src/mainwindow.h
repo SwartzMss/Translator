@@ -14,6 +14,7 @@
 #include <QMenu>
 #include <QAction>
 #include "translator.h"
+#include "deepseekclient.h"
 
 QT_BEGIN_NAMESPACE
 class QVBoxLayout;
@@ -34,8 +35,11 @@ protected:
 
 private slots:
     void onTranslateClicked();
+    void onPolishClicked();
     void onTranslationFinished(const QString &translatedText, const QString &detectedLang);
     void onTranslationError(const QString &errorMessage);
+    void onPolishFinished(const QString &polishedText);
+    void onPolishError(const QString &errorMessage);
     void onSetApiClicked();
     void onTestApiClicked();
     void onSwapLanguagesClicked();
@@ -62,6 +66,7 @@ private:
     // API配置区域
     QLineEdit *m_appIdEdit;
     QLineEdit *m_secretKeyEdit;
+    QLineEdit *m_deepSeekKeyEdit;
     QPushButton *m_setApiButton;
     QPushButton *m_testApiButton;
     
@@ -79,6 +84,7 @@ private:
     
     // 翻译按钮
     QPushButton *m_translateButton;
+    QPushButton *m_polishButton;
     
     // 输出区域
     QLabel *m_outputLabel;
@@ -90,6 +96,7 @@ private:
     
     // 翻译服务
     Translator *m_translator;
+    DeepSeekClient *m_polisher;
     
     // 设置
     QSettings *m_settings;

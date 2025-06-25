@@ -11,6 +11,12 @@ namespace Config {
     inline constexpr const char* BAIDU_QUOTA_URL = "https://fanyi-api.baidu.com/api/trans/vip/translate";
     inline constexpr const char* BAIDU_APP_ID = "YOUR_APP_ID";  // 需要用户配置
     inline constexpr const char* BAIDU_SECRET_KEY = "YOUR_SECRET_KEY";  // 需要用户配置
+
+    // DeepSeek润色API配置
+    inline constexpr const char* DEEPSEEK_API_URL = "https://api.deepseek.com/v1/polish";
+    // Default prompt for polishing English text
+    inline constexpr const char* DEEPSEEK_PROMPT = "Please polish the following English text:";
+    inline constexpr const char* DEEPSEEK_KEY = "YOUR_DEEPSEEK_KEY";  // 需要用户配置
     
     // 支持的语言列表
     inline const QStringList SUPPORTED_LANGUAGES = QStringList{
