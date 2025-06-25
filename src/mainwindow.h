@@ -7,6 +7,7 @@
 #include <QPushButton>
 #include <QLabel>
 #include <QProgressBar>
+#include <QTabWidget>
 #include <QMessageBox>
 #include <QSettings>
 #include <QLineEdit>
@@ -62,6 +63,29 @@ private:
     // UI组件
     QWidget *m_centralWidget;
     QVBoxLayout *m_mainLayout;
+    QTabWidget *m_tabWidget;
+
+    // 翻译Tab组件
+    QWidget *m_translateTab;
+    QLabel *m_translateInputLabel;
+    QTextEdit *m_translateInputEdit;
+    QHBoxLayout *m_languageLayout;
+    QLabel *m_fromLabel;
+    QComboBox *m_fromLanguageCombo;
+    QPushButton *m_swapButton;
+    QLabel *m_toLabel;
+    QComboBox *m_toLanguageCombo;
+    QPushButton *m_translateButton;
+    QLabel *m_translateOutputLabel;
+    QTextEdit *m_translateOutputEdit;
+
+    // 润色Tab组件
+    QWidget *m_polishTab;
+    QLabel *m_polishInputLabel;
+    QTextEdit *m_polishInputEdit;
+    QPushButton *m_polishButton;
+    QLabel *m_polishOutputLabel;
+    QTextEdit *m_polishOutputEdit;
     
     // API配置区域
     QLineEdit *m_appIdEdit;
@@ -69,26 +93,6 @@ private:
     QLineEdit *m_deepSeekKeyEdit;
     QPushButton *m_setApiButton;
     QPushButton *m_testApiButton;
-    
-    // 输入区域
-    QLabel *m_inputLabel;
-    QTextEdit *m_inputTextEdit;
-    
-    // 语言选择区域
-    QHBoxLayout *m_languageLayout;
-    QLabel *m_fromLabel;
-    QComboBox *m_fromLanguageCombo;
-    QPushButton *m_swapButton;
-    QLabel *m_toLabel;
-    QComboBox *m_toLanguageCombo;
-    
-    // 翻译按钮
-    QPushButton *m_translateButton;
-    QPushButton *m_polishButton;
-    
-    // 输出区域
-    QLabel *m_outputLabel;
-    QTextEdit *m_outputTextEdit;
     
     // 状态栏
     QProgressBar *m_progressBar;

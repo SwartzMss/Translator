@@ -154,14 +154,20 @@ void MainWindow::setupUi()
     apiLayout->addLayout(deepSeekLayout);
     apiLayout->addLayout(apiButtonLayout);
     
-    // 输入区域
-    m_inputLabel = new QLabel("输入要翻译的文本:", this);
-    m_inputLabel->setFont(QFont("Microsoft YaHei", 10, QFont::Bold));
-    
-    m_inputTextEdit = new QTextEdit(this);
-    m_inputTextEdit->setPlaceholderText("请输入要翻译的文本...");
-    m_inputTextEdit->setMaximumHeight(120);
-    m_inputTextEdit->setFont(QFont("Microsoft YaHei", 10));
+    // 创建TabWidget
+    m_tabWidget = new QTabWidget(this);
+
+    // ------- 翻译Tab -------
+    m_translateTab = new QWidget(this);
+    QVBoxLayout *translateLayout = new QVBoxLayout(m_translateTab);
+
+    m_translateInputLabel = new QLabel("输入要翻译的文本:", this);
+    m_translateInputLabel->setFont(QFont("Microsoft YaHei", 10, QFont::Bold));
+
+    m_translateInputEdit = new QTextEdit(this);
+    m_translateInputEdit->setPlaceholderText("请输入要翻译的文本...");
+    m_translateInputEdit->setMaximumHeight(120);
+    m_translateInputEdit->setFont(QFont("Microsoft YaHei", 10));
     
     // 语言选择区域
     m_languageLayout = new QHBoxLayout();
@@ -211,6 +217,47 @@ void MainWindow::setupUi()
         "}"
     );
 
+    // 翻译Tab输出区域
+    m_translateOutputLabel = new QLabel("翻译结果:", this);
+    m_translateOutputLabel->setFont(QFont("Microsoft YaHei", 10, QFont::Bold));
+
+    m_translateOutputEdit = new QTextEdit(this);
+    m_translateOutputEdit->setReadOnly(true);
+    m_translateOutputEdit->setPlaceholderText("翻译结果将显示在这里...");
+    m_translateOutputEdit->setMaximumHeight(120);
+    m_translateOutputEdit->setFont(QFont("Microsoft YaHei", 10));
+    m_translateOutputEdit->setStyleSheet(
+        "QTextEdit {"
+        "    background-color: #f8f9fa;"
+        "    border: 1px solid #dee2e6;"
+        "    border-radius: 5px;"
+        "}"
+    );
+
+    translateLayout->addWidget(m_translateInputLabel);
+    translateLayout->addWidget(m_translateInputEdit);
+    translateLayout->addLayout(m_languageLayout);
+    QHBoxLayout *translateButtonLayout = new QHBoxLayout();
+    translateButtonLayout->addWidget(m_translateButton);
+    translateButtonLayout->addStretch();
+    translateLayout->addLayout(translateButtonLayout);
+    translateLayout->addWidget(m_translateOutputLabel);
+    translateLayout->addWidget(m_translateOutputEdit);
+
+    m_tabWidget->addTab(m_translateTab, "翻译");
+
+    // ------- 润色Tab -------
+    m_polishTab = new QWidget(this);
+    QVBoxLayout *polishLayout = new QVBoxLayout(m_polishTab);
+
+    m_polishInputLabel = new QLabel("输入要润色的英文文本:", this);
+    m_polishInputLabel->setFont(QFont("Microsoft YaHei", 10, QFont::Bold));
+
+    m_polishInputEdit = new QTextEdit(this);
+    m_polishInputEdit->setPlaceholderText("请输入要润色的英文文本...");
+    m_polishInputEdit->setMaximumHeight(120);
+    m_polishInputEdit->setFont(QFont("Microsoft YaHei", 10));
+
     m_polishButton = new QPushButton("润色", this);
     m_polishButton->setFont(QFont("Microsoft YaHei", 12, QFont::Bold));
     m_polishButton->setMinimumHeight(40);
@@ -233,23 +280,33 @@ void MainWindow::setupUi()
         "    color: #666666;"
         "}"
     );
-    
-    // 输出区域
-    m_outputLabel = new QLabel("翻译结果:", this);
-    m_outputLabel->setFont(QFont("Microsoft YaHei", 10, QFont::Bold));
-    
-    m_outputTextEdit = new QTextEdit(this);
-    m_outputTextEdit->setReadOnly(true);
-    m_outputTextEdit->setPlaceholderText("翻译结果将显示在这里...");
-    m_outputTextEdit->setMaximumHeight(120);
-    m_outputTextEdit->setFont(QFont("Microsoft YaHei", 10));
-    m_outputTextEdit->setStyleSheet(
+
+    m_polishOutputLabel = new QLabel("润色结果:", this);
+    m_polishOutputLabel->setFont(QFont("Microsoft YaHei", 10, QFont::Bold));
+
+    m_polishOutputEdit = new QTextEdit(this);
+    m_polishOutputEdit->setReadOnly(true);
+    m_polishOutputEdit->setPlaceholderText("润色结果将显示在这里...");
+    m_polishOutputEdit->setMaximumHeight(120);
+    m_polishOutputEdit->setFont(QFont("Microsoft YaHei", 10));
+    m_polishOutputEdit->setStyleSheet(
         "QTextEdit {"
         "    background-color: #f8f9fa;"
         "    border: 1px solid #dee2e6;"
         "    border-radius: 5px;"
         "}"
     );
+
+    polishLayout->addWidget(m_polishInputLabel);
+    polishLayout->addWidget(m_polishInputEdit);
+    QHBoxLayout *polishButtonLayout = new QHBoxLayout();
+    polishButtonLayout->addWidget(m_polishButton);
+    polishButtonLayout->addStretch();
+    polishLayout->addLayout(polishButtonLayout);
+    polishLayout->addWidget(m_polishOutputLabel);
+    polishLayout->addWidget(m_polishOutputEdit);
+
+    m_tabWidget->addTab(m_polishTab, "润色");
     
     // 状态栏
     m_progressBar = new QProgressBar(this);
@@ -265,16 +322,7 @@ void MainWindow::setupUi()
     
     // 组装布局 - API配置区域移到最上面
     m_mainLayout->addWidget(apiGroup);
-    m_mainLayout->addWidget(m_inputLabel);
-    m_mainLayout->addWidget(m_inputTextEdit);
-    m_mainLayout->addLayout(m_languageLayout);
-    QHBoxLayout *buttonLayout = new QHBoxLayout();
-    buttonLayout->addWidget(m_translateButton);
-    buttonLayout->addWidget(m_polishButton);
-    buttonLayout->addStretch();
-    m_mainLayout->addLayout(buttonLayout);
-    m_mainLayout->addWidget(m_outputLabel);
-    m_mainLayout->addWidget(m_outputTextEdit);
+    m_mainLayout->addWidget(m_tabWidget);
     m_mainLayout->addLayout(statusLayout);
     
     // 设置样式
@@ -409,7 +457,7 @@ void MainWindow::updateLanguageComboBoxes()
 
 void MainWindow::onTranslateClicked()
 {
-    QString text = m_inputTextEdit->toPlainText().trimmed();
+    QString text = m_translateInputEdit->toPlainText().trimmed();
     if (text.isEmpty()) {
         LOG_INFO("翻译按钮点击 - 输入文本为空");
         showError("请输入要翻译的文本");
@@ -443,7 +491,7 @@ void MainWindow::onTranslateClicked()
 
 void MainWindow::onPolishClicked()
 {
-    QString text = m_inputTextEdit->toPlainText().trimmed();
+    QString text = m_polishInputEdit->toPlainText().trimmed();
     if (text.isEmpty()) {
         showError("请输入要润色的文本");
         return;
@@ -471,7 +519,7 @@ void MainWindow::onTranslationFinished(const QString &translatedText, const QStr
 {
     LOG_DEBUG("翻译完成");
     
-    m_outputTextEdit->setText(translatedText);
+    m_translateOutputEdit->setText(translatedText);
     m_progressBar->setVisible(false);
     m_translateButton->setEnabled(true);
     m_translateButton->setText("翻译");
@@ -516,7 +564,7 @@ void MainWindow::onTranslationError(const QString &errorMessage)
 
 void MainWindow::onPolishFinished(const QString &polishedText)
 {
-    m_outputTextEdit->setText(polishedText);
+    m_polishOutputEdit->setText(polishedText);
     m_progressBar->setVisible(false);
     m_translateButton->setEnabled(true);
     m_polishButton->setEnabled(true);
