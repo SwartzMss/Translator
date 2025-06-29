@@ -64,6 +64,7 @@ private:
     void showInfo(const QString &message);
     void createTrayIcon();
     void createSettingsDialog();
+    void applyProxyFromEnvironment();
 
     // UI组件
     QWidget *m_centralWidget;

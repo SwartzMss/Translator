@@ -17,7 +17,8 @@ SOURCES += \
     src/mainwindow.cpp \
     src/translator.cpp \
     src/logger.cpp \
-    src/deepseekclient.cpp
+    src/deepseekclient.cpp \
+    src/networkproxy.cpp
 
 # 头文件
 HEADERS += \
@@ -25,7 +26,8 @@ HEADERS += \
     src/translator.h \
     src/config.h \
     src/logger.h \
-    src/deepseekclient.h
+    src/deepseekclient.h \
+    src/networkproxy.h
 
 # 资源文件
 RESOURCES += \
