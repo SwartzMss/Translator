@@ -15,6 +15,7 @@
 #include <QSystemTrayIcon>
 #include <QMenu>
 #include <QAction>
+#include <QDialog>
 #include "translator.h"
 #include "deepseekclient.h"
 
@@ -49,6 +50,7 @@ private slots:
     void onShowTriggered();
     void onExitTriggered();
     void onBrowseCertClicked();
+    void onSettingsClicked();
 
 private:
     void setupUi();
@@ -61,6 +63,7 @@ private:
     void showError(const QString &message);
     void showInfo(const QString &message);
     void createTrayIcon();
+    void createSettingsDialog();
 
     // UI组件
     QWidget *m_centralWidget;
@@ -89,10 +92,23 @@ private:
     QLabel *m_polishOutputLabel;
     QTextEdit *m_polishOutputEdit;
     
-    // API配置区域
+    // 设置按钮
+    QPushButton *m_settingsButton;
+    
+    // 设置对话框
+    QDialog *m_settingsDialog;
+    QTabWidget *m_settingsTabWidget;
+    
+    // API配置Tab组件
+    QWidget *m_apiTab;
     QLineEdit *m_appIdEdit;
     QLineEdit *m_secretKeyEdit;
     QLineEdit *m_deepSeekKeyEdit;
+    QPushButton *m_setApiButton;
+    QPushButton *m_testApiButton;
+    
+    // 代理设置Tab组件
+    QWidget *m_proxyTab;
     QCheckBox *m_proxyEnableCheck;
     QLineEdit *m_proxyHostEdit;
     QLineEdit *m_proxyPortEdit;
@@ -100,8 +116,6 @@ private:
     QLineEdit *m_proxyPasswordEdit;
     QLineEdit *m_caCertPathEdit;
     QPushButton *m_browseCertButton;
-    QPushButton *m_setApiButton;
-    QPushButton *m_testApiButton;
     
     // 状态栏
     QProgressBar *m_progressBar;

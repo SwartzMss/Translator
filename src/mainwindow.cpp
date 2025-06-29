@@ -40,9 +40,9 @@ MainWindow::MainWindow(QWidget *parent)
     
     setupUi();
     updateLanguageComboBoxes();
-    loadSettings();
     setupConnections();
     createTrayIcon();
+    loadSettings();
 
     // 设置窗口属性
     setWindowTitle("百度翻译工具");
@@ -79,141 +79,6 @@ void MainWindow::setupUi()
     m_mainLayout = new QVBoxLayout(m_centralWidget);
     m_mainLayout->setSpacing(10);
     m_mainLayout->setContentsMargins(15, 15, 15, 15);
-    
-    // API配置区域 - 直接显示在主窗口
-    QGroupBox *apiGroup = new QGroupBox("API配置", this);
-    QVBoxLayout *apiLayout = new QVBoxLayout(apiGroup);
-    apiLayout->setSpacing(10);
-    
-    // App ID
-    QHBoxLayout *appIdLayout = new QHBoxLayout();
-    QLabel *appIdLabel = new QLabel("App ID:", this);
-    appIdLabel->setMinimumWidth(80);
-    m_appIdEdit = new QLineEdit(this);
-    m_appIdEdit->setPlaceholderText("请输入百度翻译API的App ID");
-    appIdLayout->addWidget(appIdLabel);
-    appIdLayout->addWidget(m_appIdEdit);
-    
-    // Secret Key
-    QHBoxLayout *secretKeyLayout = new QHBoxLayout();
-    QLabel *secretKeyLabel = new QLabel("Secret Key:", this);
-    secretKeyLabel->setMinimumWidth(80);
-    m_secretKeyEdit = new QLineEdit(this);
-    m_secretKeyEdit->setPlaceholderText("请输入百度翻译API的Secret Key");
-    m_secretKeyEdit->setEchoMode(QLineEdit::Password);
-    secretKeyLayout->addWidget(secretKeyLabel);
-    secretKeyLayout->addWidget(m_secretKeyEdit);
-
-    // DeepSeek Key
-    QHBoxLayout *deepSeekLayout = new QHBoxLayout();
-    QLabel *deepSeekLabel = new QLabel("DeepSeek Key:", this);
-    deepSeekLabel->setMinimumWidth(80);
-    m_deepSeekKeyEdit = new QLineEdit(this);
-    m_deepSeekKeyEdit->setPlaceholderText("请输入DeepSeek API Key");
-    m_deepSeekKeyEdit->setEchoMode(QLineEdit::Password);
-    deepSeekLayout->addWidget(deepSeekLabel);
-    deepSeekLayout->addWidget(m_deepSeekKeyEdit);
-
-    // 代理设置区域
-    QGroupBox *proxyGroup = new QGroupBox("代理设置", this);
-    QVBoxLayout *proxyLayout = new QVBoxLayout(proxyGroup);
-    proxyLayout->setSpacing(10);
-
-    m_proxyEnableCheck = new QCheckBox("启用代理", this);
-    proxyLayout->addWidget(m_proxyEnableCheck);
-
-    QHBoxLayout *proxyHostLayout = new QHBoxLayout();
-    QLabel *proxyHostLabel = new QLabel("代理IP:", this);
-    proxyHostLabel->setMinimumWidth(80);
-    m_proxyHostEdit = new QLineEdit(this);
-    m_proxyHostEdit->setPlaceholderText("例如 127.0.0.1");
-    proxyHostLayout->addWidget(proxyHostLabel);
-    proxyHostLayout->addWidget(m_proxyHostEdit);
-
-    QHBoxLayout *proxyPortLayout = new QHBoxLayout();
-    QLabel *proxyPortLabel = new QLabel("端口:", this);
-    proxyPortLabel->setMinimumWidth(80);
-    m_proxyPortEdit = new QLineEdit(this);
-    m_proxyPortEdit->setPlaceholderText("如 7890");
-    proxyPortLayout->addWidget(proxyPortLabel);
-    proxyPortLayout->addWidget(m_proxyPortEdit);
-
-    QHBoxLayout *proxyUserLayout = new QHBoxLayout();
-    QLabel *proxyUserLabel = new QLabel("用户名:", this);
-    proxyUserLabel->setMinimumWidth(80);
-    m_proxyUserEdit = new QLineEdit(this);
-    m_proxyUserEdit->setPlaceholderText("可选");
-    proxyUserLayout->addWidget(proxyUserLabel);
-    proxyUserLayout->addWidget(m_proxyUserEdit);
-
-    QHBoxLayout *proxyPassLayout = new QHBoxLayout();
-    QLabel *proxyPassLabel = new QLabel("密码:", this);
-    proxyPassLabel->setMinimumWidth(80);
-    m_proxyPasswordEdit = new QLineEdit(this);
-    m_proxyPasswordEdit->setPlaceholderText("可选");
-    m_proxyPasswordEdit->setEchoMode(QLineEdit::Password);
-    proxyPassLayout->addWidget(proxyPassLabel);
-    proxyPassLayout->addWidget(m_proxyPasswordEdit);
-
-    QHBoxLayout *certLayout = new QHBoxLayout();
-    QLabel *certLabel = new QLabel("证书文件:", this);
-    certLabel->setMinimumWidth(80);
-    m_caCertPathEdit = new QLineEdit(this);
-    m_caCertPathEdit->setPlaceholderText("可选，CA证书路径");
-    m_browseCertButton = new QPushButton("浏览...", this);
-    certLayout->addWidget(certLabel);
-    certLayout->addWidget(m_caCertPathEdit);
-    certLayout->addWidget(m_browseCertButton);
-
-    proxyLayout->addLayout(proxyHostLayout);
-    proxyLayout->addLayout(proxyPortLayout);
-    proxyLayout->addLayout(proxyUserLayout);
-    proxyLayout->addLayout(proxyPassLayout);
-    proxyLayout->addLayout(certLayout);
-    
-    // API配置按钮
-    QHBoxLayout *apiButtonLayout = new QHBoxLayout();
-    m_setApiButton = new QPushButton("设置并保存", this);
-    m_setApiButton->setStyleSheet(
-        "QPushButton {"
-        "    background-color: #28a745;"
-        "    color: white;"
-        "    border: none;"
-        "    border-radius: 5px;"
-        "    padding: 8px 15px;"
-        "    font-weight: bold;"
-        "}"
-        "QPushButton:hover {"
-        "    background-color: #218838;"
-        "}"
-    );
-    
-    m_testApiButton = new QPushButton("检测连接", this);
-    m_testApiButton->setStyleSheet(
-        "QPushButton {"
-        "    background-color: #17a2b8;"
-        "    color: white;"
-        "    border: none;"
-        "    border-radius: 5px;"
-        "    padding: 8px 15px;"
-        "    font-weight: bold;"
-        "}"
-        "QPushButton:hover {"
-        "    background-color: #138496;"
-        "}"
-    );
-    
-    apiButtonLayout->addWidget(m_setApiButton);
-    apiButtonLayout->addWidget(m_testApiButton);
-    apiButtonLayout->addStretch();
-    
-    apiLayout->addLayout(appIdLayout);
-    apiLayout->addLayout(secretKeyLayout);
-    apiLayout->addLayout(deepSeekLayout);
-    apiLayout->addLayout(apiButtonLayout);
-
-    m_mainLayout->addWidget(apiGroup);
-    m_mainLayout->addWidget(proxyGroup);
     
     // 创建TabWidget
     m_tabWidget = new QTabWidget(this);
@@ -369,6 +234,24 @@ void MainWindow::setupUi()
 
     m_tabWidget->addTab(m_polishTab, "润色");
     
+    // 设置按钮
+    m_settingsButton = new QPushButton("设置", this);
+    m_settingsButton->setText("设置");
+    m_settingsButton->setToolTip("配置API密钥和代理设置");
+    m_settingsButton->setStyleSheet(
+        "QPushButton {"
+        "    background-color: #6c757d;"
+        "    color: white;"
+        "    border: none;"
+        "    border-radius: 5px;"
+        "    padding: 8px 15px;"
+        "    font-weight: bold;"
+        "}"
+        "QPushButton:hover {"
+        "    background-color: #5a6268;"
+        "}"
+    );
+    
     // 状态栏
     m_progressBar = new QProgressBar(this);
     m_progressBar->setVisible(false);
@@ -380,10 +263,15 @@ void MainWindow::setupUi()
     QHBoxLayout *statusLayout = new QHBoxLayout();
     statusLayout->addWidget(m_progressBar);
     statusLayout->addWidget(m_statusLabel);
+    statusLayout->addStretch();
+    statusLayout->addWidget(m_settingsButton);
     
-    // 组装布局 - API配置区域移到最上面
+    // 组装布局
     m_mainLayout->addWidget(m_tabWidget);
     m_mainLayout->addLayout(statusLayout);
+    
+    // 创建设置对话框
+    createSettingsDialog();
     
     // 设置样式
     setStyleSheet(
@@ -403,69 +291,20 @@ void MainWindow::setupUi()
         "    border-radius: 3px;"
         "    padding: 5px;"
         "    background-color: white;"
-        "    color: #333333;"
-        "    font-size: 10px;"
         "}"
-        "QComboBox:hover {"
-        "    border: 1px solid #007bff;"
-        "}"
-        "QComboBox:focus {"
-        "    border: 2px solid #007bff;"
-        "}"
-        "QComboBox::drop-down {"
-        "    border: none;"
-        "    width: 20px;"
-        "}"
-        "QComboBox::down-arrow {"
-        "    image: none;"
-        "    border-left: 5px solid transparent;"
-        "    border-right: 5px solid transparent;"
-        "    border-top: 5px solid #666666;"
-        "    margin-right: 5px;"
-        "}"
-        "QComboBox QAbstractItemView {"
-        "    border: 1px solid #cccccc;"
-        "    border-radius: 3px;"
-        "    background-color: white;"
-        "    selection-background-color: #007bff;"
-        "    selection-color: white;"
-        "    outline: none;"
-        "}"
-        "QComboBox QAbstractItemView::item {"
-        "    padding: 8px 12px;"
-        "    border: none;"
-        "    background-color: transparent;"
-        "    color: #333333;"
-        "}"
-        "QComboBox QAbstractItemView::item:hover {"
-        "    background-color: #e3f2fd;"
-        "    color: #333333;"
-        "}"
-        "QComboBox QAbstractItemView::item:selected {"
-        "    background-color: #007bff;"
-        "    color: white;"
-        "    font-weight: bold;"
-        "}"
-        "QPushButton {"
-        "    border: 1px solid #cccccc;"
-        "    border-radius: 3px;"
-        "    padding: 5px 10px;"
-        "    background-color: #f8f9fa;"
-        "}"
-        "QPushButton:hover {"
-        "    background-color: #e9ecef;"
-        "}"
-        "QGroupBox {"
-        "    font-weight: bold;"
+        "QTabWidget::pane {"
         "    border: 1px solid #cccccc;"
         "    border-radius: 5px;"
-        "    margin-top: 10px;"
-        "    padding-top: 10px;"
         "}"
-        "QGroupBox::title {"
-        "    subcontrol-origin: margin;"
-        "    left: 10px;"
-        "    padding: 0 5px 0 5px;"
+        "QTabBar::tab {"
+        "    background-color: #f8f9fa;"
+        "    border: 1px solid #cccccc;"
+        "    padding: 8px 16px;"
+        "    margin-right: 2px;"
+        "}"
+        "QTabBar::tab:selected {"
+        "    background-color: white;"
+        "    border-bottom: 2px solid #007bff;"
         "}"
     );
     
@@ -489,18 +328,8 @@ void MainWindow::setupConnections()
     // 连接UI信号
     connect(m_translateButton, &QPushButton::clicked, this, &MainWindow::onTranslateClicked);
     connect(m_polishButton, &QPushButton::clicked, this, &MainWindow::onPolishClicked);
-    connect(m_setApiButton, &QPushButton::clicked, this, &MainWindow::onSetApiClicked);
-    connect(m_testApiButton, &QPushButton::clicked, this, &MainWindow::onTestApiClicked);
+    connect(m_settingsButton, &QPushButton::clicked, this, &MainWindow::onSettingsClicked);
     connect(m_swapButton, &QPushButton::clicked, this, &MainWindow::onSwapLanguagesClicked);
-    connect(m_browseCertButton, &QPushButton::clicked, this, &MainWindow::onBrowseCertClicked);
-    connect(m_proxyEnableCheck, &QCheckBox::toggled, [this](bool checked) {
-        m_proxyHostEdit->setEnabled(checked);
-        m_proxyPortEdit->setEnabled(checked);
-        m_proxyUserEdit->setEnabled(checked);
-        m_proxyPasswordEdit->setEnabled(checked);
-        m_caCertPathEdit->setEnabled(checked);
-        m_browseCertButton->setEnabled(checked);
-    });
     
     LOG_DEBUG("信号连接设置完成");
 }
@@ -586,21 +415,18 @@ void MainWindow::onPolishClicked()
 
 void MainWindow::onTranslationFinished(const QString &translatedText, const QString &detectedLang)
 {
-    LOG_DEBUG("翻译完成");
-    
     m_translateOutputEdit->setText(translatedText);
     m_progressBar->setVisible(false);
     m_translateButton->setEnabled(true);
     m_translateButton->setText("翻译");
     m_polishButton->setEnabled(true);
-    m_statusLabel->setText(QString("翻译完成 (检测语言: %1)").arg(detectedLang));
+    m_statusLabel->setText("翻译完成");
     
-    // 如果是API测试，恢复按钮状态
-    if (m_testApiButton->text() == "测试中...") {
+    // 如果是API测试，显示成功信息
+    if (m_testApiButton && m_testApiButton->text() == "测试中...") {
         m_testApiButton->setEnabled(true);
         m_testApiButton->setText("检测连接");
-        
-        QString message = QString("API连接成功！\n测试翻译：你好 → %1\n检测语言：%2")
+        QString message = QString("API连接成功！\n测试翻译结果：%1\n检测到的语言：%2")
                          .arg(translatedText)
                          .arg(detectedLang);
         showInfo(message);
@@ -620,7 +446,7 @@ void MainWindow::onTranslationError(const QString &errorMessage)
     m_statusLabel->setText("翻译失败");
     
     // 如果是API测试，恢复按钮状态
-    if (m_testApiButton->text() == "测试中...") {
+    if (m_testApiButton && m_testApiButton->text() == "测试中...") {
         m_testApiButton->setEnabled(true);
         m_testApiButton->setText("检测连接");
         showError("API连接失败：" + errorMessage);
@@ -649,6 +475,14 @@ void MainWindow::onPolishError(const QString &errorMessage)
     m_polishButton->setText("润色");
     m_statusLabel->setText("润色失败");
     showError("润色失败：" + errorMessage);
+}
+
+void MainWindow::onSettingsClicked()
+{
+    // 显示设置对话框
+    m_settingsDialog->show();
+    m_settingsDialog->raise();
+    m_settingsDialog->activateWindow();
 }
 
 void MainWindow::onSetApiClicked()
@@ -772,22 +606,25 @@ void MainWindow::loadSettings()
     QString proxyPassword = m_settings->value("proxyPassword", "").toString();
     QString caCertPath = m_settings->value("caCertPath", "").toString();
     
-    m_appIdEdit->setText(appId);
-    m_secretKeyEdit->setText(secretKey);
-    m_deepSeekKeyEdit->setText(deepSeekKey);
-    m_proxyEnableCheck->setChecked(proxyEnabled);
-    m_proxyHostEdit->setText(proxyHost);
-    m_proxyPortEdit->setText(proxyPortStr);
-    m_proxyUserEdit->setText(proxyUser);
-    m_proxyPasswordEdit->setText(proxyPassword);
-    m_caCertPathEdit->setText(caCertPath);
+    // 设置到对话框组件（如果已创建）
+    if (m_appIdEdit) {
+        m_appIdEdit->setText(appId);
+        m_secretKeyEdit->setText(secretKey);
+        m_deepSeekKeyEdit->setText(deepSeekKey);
+        m_proxyEnableCheck->setChecked(proxyEnabled);
+        m_proxyHostEdit->setText(proxyHost);
+        m_proxyPortEdit->setText(proxyPortStr);
+        m_proxyUserEdit->setText(proxyUser);
+        m_proxyPasswordEdit->setText(proxyPassword);
+        m_caCertPathEdit->setText(caCertPath);
 
-    m_proxyHostEdit->setEnabled(proxyEnabled);
-    m_proxyPortEdit->setEnabled(proxyEnabled);
-    m_proxyUserEdit->setEnabled(proxyEnabled);
-    m_proxyPasswordEdit->setEnabled(proxyEnabled);
-    m_caCertPathEdit->setEnabled(proxyEnabled);
-    m_browseCertButton->setEnabled(proxyEnabled);
+        m_proxyHostEdit->setEnabled(proxyEnabled);
+        m_proxyPortEdit->setEnabled(proxyEnabled);
+        m_proxyUserEdit->setEnabled(proxyEnabled);
+        m_proxyPasswordEdit->setEnabled(proxyEnabled);
+        m_caCertPathEdit->setEnabled(proxyEnabled);
+        m_browseCertButton->setEnabled(proxyEnabled);
+    }
     
     // 设置到翻译器
     if (!appId.isEmpty() && !secretKey.isEmpty()) {
@@ -929,4 +766,254 @@ void MainWindow::closeEvent(QCloseEvent *event)
     } else {
         event->accept();
     }
+}
+
+void MainWindow::createSettingsDialog()
+{
+    LOG_DEBUG("创建设置对话框");
+    
+    m_settingsDialog = new QDialog(this);
+    m_settingsDialog->setWindowTitle("设置");
+    m_settingsDialog->setModal(true);
+    m_settingsDialog->setMinimumSize(500, 400);
+    
+    QVBoxLayout *dialogLayout = new QVBoxLayout(m_settingsDialog);
+    
+    // 创建标签页控件
+    m_settingsTabWidget = new QTabWidget(m_settingsDialog);
+    
+    // ------- API配置Tab -------
+    m_apiTab = new QWidget(m_settingsDialog);
+    QVBoxLayout *apiLayout = new QVBoxLayout(m_apiTab);
+    apiLayout->setSpacing(15);
+    apiLayout->setContentsMargins(20, 20, 20, 20);
+    
+    // App ID
+    QHBoxLayout *appIdLayout = new QHBoxLayout();
+    QLabel *appIdLabel = new QLabel("App ID:", m_apiTab);
+    appIdLabel->setMinimumWidth(100);
+    m_appIdEdit = new QLineEdit(m_apiTab);
+    m_appIdEdit->setPlaceholderText("请输入百度翻译API的App ID");
+    appIdLayout->addWidget(appIdLabel);
+    appIdLayout->addWidget(m_appIdEdit);
+    
+    // Secret Key
+    QHBoxLayout *secretKeyLayout = new QHBoxLayout();
+    QLabel *secretKeyLabel = new QLabel("Secret Key:", m_apiTab);
+    secretKeyLabel->setMinimumWidth(100);
+    m_secretKeyEdit = new QLineEdit(m_apiTab);
+    m_secretKeyEdit->setPlaceholderText("请输入百度翻译API的Secret Key");
+    m_secretKeyEdit->setEchoMode(QLineEdit::Password);
+    secretKeyLayout->addWidget(secretKeyLabel);
+    secretKeyLayout->addWidget(m_secretKeyEdit);
+
+    // DeepSeek Key
+    QHBoxLayout *deepSeekLayout = new QHBoxLayout();
+    QLabel *deepSeekLabel = new QLabel("DeepSeek Key:", m_apiTab);
+    deepSeekLabel->setMinimumWidth(100);
+    m_deepSeekKeyEdit = new QLineEdit(m_apiTab);
+    m_deepSeekKeyEdit->setPlaceholderText("请输入DeepSeek API Key");
+    m_deepSeekKeyEdit->setEchoMode(QLineEdit::Password);
+    deepSeekLayout->addWidget(deepSeekLabel);
+    deepSeekLayout->addWidget(m_deepSeekKeyEdit);
+    
+    // API配置按钮
+    QHBoxLayout *apiButtonLayout = new QHBoxLayout();
+    m_setApiButton = new QPushButton("设置并保存", m_apiTab);
+    m_setApiButton->setStyleSheet(
+        "QPushButton {"
+        "    background-color: #28a745;"
+        "    color: white;"
+        "    border: none;"
+        "    border-radius: 5px;"
+        "    padding: 8px 15px;"
+        "    font-weight: bold;"
+        "}"
+        "QPushButton:hover {"
+        "    background-color: #218838;"
+        "}"
+    );
+    
+    m_testApiButton = new QPushButton("检测连接", m_apiTab);
+    m_testApiButton->setStyleSheet(
+        "QPushButton {"
+        "    background-color: #17a2b8;"
+        "    color: white;"
+        "    border: none;"
+        "    border-radius: 5px;"
+        "    padding: 8px 15px;"
+        "    font-weight: bold;"
+        "}"
+        "QPushButton:hover {"
+        "    background-color: #138496;"
+        "}"
+    );
+    
+    apiButtonLayout->addWidget(m_setApiButton);
+    apiButtonLayout->addWidget(m_testApiButton);
+    apiButtonLayout->addStretch();
+    
+    apiLayout->addLayout(appIdLayout);
+    apiLayout->addLayout(secretKeyLayout);
+    apiLayout->addLayout(deepSeekLayout);
+    apiLayout->addLayout(apiButtonLayout);
+    apiLayout->addStretch();
+    
+    m_settingsTabWidget->addTab(m_apiTab, "API配置");
+    
+    // ------- 代理设置Tab -------
+    m_proxyTab = new QWidget(m_settingsDialog);
+    QVBoxLayout *proxyLayout = new QVBoxLayout(m_proxyTab);
+    proxyLayout->setSpacing(15);
+    proxyLayout->setContentsMargins(20, 20, 20, 20);
+
+    m_proxyEnableCheck = new QCheckBox("启用代理", m_proxyTab);
+    proxyLayout->addWidget(m_proxyEnableCheck);
+
+    QHBoxLayout *proxyHostLayout = new QHBoxLayout();
+    QLabel *proxyHostLabel = new QLabel("代理IP:", m_proxyTab);
+    proxyHostLabel->setMinimumWidth(100);
+    m_proxyHostEdit = new QLineEdit(m_proxyTab);
+    m_proxyHostEdit->setPlaceholderText("例如 127.0.0.1");
+    proxyHostLayout->addWidget(proxyHostLabel);
+    proxyHostLayout->addWidget(m_proxyHostEdit);
+
+    QHBoxLayout *proxyPortLayout = new QHBoxLayout();
+    QLabel *proxyPortLabel = new QLabel("端口:", m_proxyTab);
+    proxyPortLabel->setMinimumWidth(100);
+    m_proxyPortEdit = new QLineEdit(m_proxyTab);
+    m_proxyPortEdit->setPlaceholderText("如 7890");
+    proxyPortLayout->addWidget(proxyPortLabel);
+    proxyPortLayout->addWidget(m_proxyPortEdit);
+
+    QHBoxLayout *proxyUserLayout = new QHBoxLayout();
+    QLabel *proxyUserLabel = new QLabel("用户名:", m_proxyTab);
+    proxyUserLabel->setMinimumWidth(100);
+    m_proxyUserEdit = new QLineEdit(m_proxyTab);
+    m_proxyUserEdit->setPlaceholderText("可选");
+    proxyUserLayout->addWidget(proxyUserLabel);
+    proxyUserLayout->addWidget(m_proxyUserEdit);
+
+    QHBoxLayout *proxyPassLayout = new QHBoxLayout();
+    QLabel *proxyPassLabel = new QLabel("密码:", m_proxyTab);
+    proxyPassLabel->setMinimumWidth(100);
+    m_proxyPasswordEdit = new QLineEdit(m_proxyTab);
+    m_proxyPasswordEdit->setPlaceholderText("可选");
+    m_proxyPasswordEdit->setEchoMode(QLineEdit::Password);
+    proxyPassLayout->addWidget(proxyPassLabel);
+    proxyPassLayout->addWidget(m_proxyPasswordEdit);
+
+    QHBoxLayout *certLayout = new QHBoxLayout();
+    QLabel *certLabel = new QLabel("证书文件:", m_proxyTab);
+    certLabel->setMinimumWidth(100);
+    m_caCertPathEdit = new QLineEdit(m_proxyTab);
+    m_caCertPathEdit->setPlaceholderText("可选，CA证书路径");
+    m_browseCertButton = new QPushButton("浏览...", m_proxyTab);
+    certLayout->addWidget(certLabel);
+    certLayout->addWidget(m_caCertPathEdit);
+    certLayout->addWidget(m_browseCertButton);
+
+    proxyLayout->addLayout(proxyHostLayout);
+    proxyLayout->addLayout(proxyPortLayout);
+    proxyLayout->addLayout(proxyUserLayout);
+    proxyLayout->addLayout(proxyPassLayout);
+    proxyLayout->addLayout(certLayout);
+    proxyLayout->addStretch();
+    
+    m_settingsTabWidget->addTab(m_proxyTab, "代理设置");
+    
+    // 对话框按钮
+    QHBoxLayout *dialogButtonLayout = new QHBoxLayout();
+    QPushButton *okButton = new QPushButton("确定", m_settingsDialog);
+    QPushButton *cancelButton = new QPushButton("取消", m_settingsDialog);
+    
+    okButton->setStyleSheet(
+        "QPushButton {"
+        "    background-color: #007bff;"
+        "    color: white;"
+        "    border: none;"
+        "    border-radius: 5px;"
+        "    padding: 8px 20px;"
+        "    font-weight: bold;"
+        "}"
+        "QPushButton:hover {"
+        "    background-color: #0069d9;"
+        "}"
+    );
+    
+    cancelButton->setStyleSheet(
+        "QPushButton {"
+        "    background-color: #6c757d;"
+        "    color: white;"
+        "    border: none;"
+        "    border-radius: 5px;"
+        "    padding: 8px 20px;"
+        "    font-weight: bold;"
+        "}"
+        "QPushButton:hover {"
+        "    background-color: #5a6268;"
+        "}"
+    );
+    
+    dialogButtonLayout->addStretch();
+    dialogButtonLayout->addWidget(okButton);
+    dialogButtonLayout->addWidget(cancelButton);
+    
+    dialogLayout->addWidget(m_settingsTabWidget);
+    dialogLayout->addLayout(dialogButtonLayout);
+    
+    // 连接信号
+    connect(m_setApiButton, &QPushButton::clicked, this, &MainWindow::onSetApiClicked);
+    connect(m_testApiButton, &QPushButton::clicked, this, &MainWindow::onTestApiClicked);
+    connect(m_browseCertButton, &QPushButton::clicked, this, &MainWindow::onBrowseCertClicked);
+    connect(m_proxyEnableCheck, &QCheckBox::toggled, [this](bool checked) {
+        m_proxyHostEdit->setEnabled(checked);
+        m_proxyPortEdit->setEnabled(checked);
+        m_proxyUserEdit->setEnabled(checked);
+        m_proxyPasswordEdit->setEnabled(checked);
+        m_caCertPathEdit->setEnabled(checked);
+        m_browseCertButton->setEnabled(checked);
+    });
+    connect(okButton, &QPushButton::clicked, m_settingsDialog, &QDialog::accept);
+    connect(cancelButton, &QPushButton::clicked, m_settingsDialog, &QDialog::reject);
+    
+    // 设置对话框样式
+    m_settingsDialog->setStyleSheet(
+        "QDialog {"
+        "    background-color: #ffffff;"
+        "}"
+        "QLabel {"
+        "    color: #333333;"
+        "    font-weight: bold;"
+        "}"
+        "QLineEdit {"
+        "    border: 1px solid #cccccc;"
+        "    border-radius: 3px;"
+        "    padding: 5px;"
+        "    background-color: white;"
+        "}"
+        "QLineEdit:focus {"
+        "    border: 2px solid #007bff;"
+        "}"
+        "QCheckBox {"
+        "    color: #333333;"
+        "    font-weight: bold;"
+        "}"
+        "QTabWidget::pane {"
+        "    border: 1px solid #cccccc;"
+        "    border-radius: 5px;"
+        "}"
+        "QTabBar::tab {"
+        "    background-color: #f8f9fa;"
+        "    border: 1px solid #cccccc;"
+        "    padding: 8px 16px;"
+        "    margin-right: 2px;"
+        "}"
+        "QTabBar::tab:selected {"
+        "    background-color: white;"
+        "    border-bottom: 2px solid #007bff;"
+        "}"
+    );
+    
+    LOG_DEBUG("设置对话框创建完成");
 }
