@@ -47,6 +47,7 @@ private slots:
     void onTrayActivated(QSystemTrayIcon::ActivationReason reason);
     void onShowTriggered();
     void onExitTriggered();
+    void onBrowseCertClicked();
 
 private:
     void setupUi();
@@ -91,6 +92,12 @@ private:
     QLineEdit *m_appIdEdit;
     QLineEdit *m_secretKeyEdit;
     QLineEdit *m_deepSeekKeyEdit;
+    QLineEdit *m_proxyHostEdit;
+    QLineEdit *m_proxyPortEdit;
+    QLineEdit *m_proxyUserEdit;
+    QLineEdit *m_proxyPasswordEdit;
+    QLineEdit *m_caCertPathEdit;
+    QPushButton *m_browseCertButton;
     QPushButton *m_setApiButton;
     QPushButton *m_testApiButton;
     

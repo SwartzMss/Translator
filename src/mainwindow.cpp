@@ -20,6 +20,7 @@
 #include <QMenu>
 #include <QAction>
 #include <QCloseEvent>
+#include <QFileDialog>
 #include "deepseekclient.h"
 
 MainWindow::MainWindow(QWidget *parent)
@@ -112,6 +113,54 @@ void MainWindow::setupUi()
     m_deepSeekKeyEdit->setEchoMode(QLineEdit::Password);
     deepSeekLayout->addWidget(deepSeekLabel);
     deepSeekLayout->addWidget(m_deepSeekKeyEdit);
+
+    // Proxy Host
+    QHBoxLayout *proxyHostLayout = new QHBoxLayout();
+    QLabel *proxyHostLabel = new QLabel("代理IP:", this);
+    proxyHostLabel->setMinimumWidth(80);
+    m_proxyHostEdit = new QLineEdit(this);
+    m_proxyHostEdit->setPlaceholderText("例如 127.0.0.1");
+    proxyHostLayout->addWidget(proxyHostLabel);
+    proxyHostLayout->addWidget(m_proxyHostEdit);
+
+    // Proxy Port
+    QHBoxLayout *proxyPortLayout = new QHBoxLayout();
+    QLabel *proxyPortLabel = new QLabel("端口:", this);
+    proxyPortLabel->setMinimumWidth(80);
+    m_proxyPortEdit = new QLineEdit(this);
+    m_proxyPortEdit->setPlaceholderText("如 7890");
+    proxyPortLayout->addWidget(proxyPortLabel);
+    proxyPortLayout->addWidget(m_proxyPortEdit);
+
+    // Proxy User
+    QHBoxLayout *proxyUserLayout = new QHBoxLayout();
+    QLabel *proxyUserLabel = new QLabel("用户名:", this);
+    proxyUserLabel->setMinimumWidth(80);
+    m_proxyUserEdit = new QLineEdit(this);
+    m_proxyUserEdit->setPlaceholderText("可选");
+    proxyUserLayout->addWidget(proxyUserLabel);
+    proxyUserLayout->addWidget(m_proxyUserEdit);
+
+    // Proxy Password
+    QHBoxLayout *proxyPassLayout = new QHBoxLayout();
+    QLabel *proxyPassLabel = new QLabel("密码:", this);
+    proxyPassLabel->setMinimumWidth(80);
+    m_proxyPasswordEdit = new QLineEdit(this);
+    m_proxyPasswordEdit->setPlaceholderText("可选");
+    m_proxyPasswordEdit->setEchoMode(QLineEdit::Password);
+    proxyPassLayout->addWidget(proxyPassLabel);
+    proxyPassLayout->addWidget(m_proxyPasswordEdit);
+
+    // CA Certificate
+    QHBoxLayout *certLayout = new QHBoxLayout();
+    QLabel *certLabel = new QLabel("证书文件:", this);
+    certLabel->setMinimumWidth(80);
+    m_caCertPathEdit = new QLineEdit(this);
+    m_caCertPathEdit->setPlaceholderText("可选，CA证书路径");
+    m_browseCertButton = new QPushButton("浏览...", this);
+    certLayout->addWidget(certLabel);
+    certLayout->addWidget(m_caCertPathEdit);
+    certLayout->addWidget(m_browseCertButton);
     
     // API配置按钮
     QHBoxLayout *apiButtonLayout = new QHBoxLayout();
@@ -152,6 +201,11 @@ void MainWindow::setupUi()
     apiLayout->addLayout(appIdLayout);
     apiLayout->addLayout(secretKeyLayout);
     apiLayout->addLayout(deepSeekLayout);
+    apiLayout->addLayout(proxyHostLayout);
+    apiLayout->addLayout(proxyPortLayout);
+    apiLayout->addLayout(proxyUserLayout);
+    apiLayout->addLayout(proxyPassLayout);
+    apiLayout->addLayout(certLayout);
     apiLayout->addLayout(apiButtonLayout);
     
     // 创建TabWidget
@@ -432,6 +486,7 @@ void MainWindow::setupConnections()
     connect(m_setApiButton, &QPushButton::clicked, this, &MainWindow::onSetApiClicked);
     connect(m_testApiButton, &QPushButton::clicked, this, &MainWindow::onTestApiClicked);
     connect(m_swapButton, &QPushButton::clicked, this, &MainWindow::onSwapLanguagesClicked);
+    connect(m_browseCertButton, &QPushButton::clicked, this, &MainWindow::onBrowseCertClicked);
     
     LOG_DEBUG("信号连接设置完成");
 }
@@ -587,6 +642,11 @@ void MainWindow::onSetApiClicked()
     QString appId = m_appIdEdit->text().trimmed();
     QString secretKey = m_secretKeyEdit->text().trimmed();
     QString deepSeekKey = m_deepSeekKeyEdit->text().trimmed();
+    QString proxyHost = m_proxyHostEdit->text().trimmed();
+    QString proxyPortStr = m_proxyPortEdit->text().trimmed();
+    QString proxyUser = m_proxyUserEdit->text().trimmed();
+    QString proxyPassword = m_proxyPasswordEdit->text().trimmed();
+    QString caCertPath = m_caCertPathEdit->text().trimmed();
 
     if (appId.isEmpty() || secretKey.isEmpty()) {
         showError("App ID和Secret Key不能为空");
@@ -595,6 +655,12 @@ void MainWindow::onSetApiClicked()
 
     // 设置到翻译器
     m_translator->setApiCredentials(appId, secretKey);
+
+    quint16 proxyPort = proxyPortStr.toUShort();
+    m_translator->setNetworkProxy(proxyHost, proxyPort, proxyUser, proxyPassword);
+    m_polisher->setNetworkProxy(proxyHost, proxyPort, proxyUser, proxyPassword);
+    m_translator->addCaCertificate(caCertPath);
+    m_polisher->addCaCertificate(caCertPath);
 
     // DeepSeek Key 可选
     if (!deepSeekKey.isEmpty()) {
@@ -605,6 +671,11 @@ void MainWindow::onSetApiClicked()
     m_settings->setValue("appId", appId);
     m_settings->setValue("secretKey", secretKey);
     m_settings->setValue("deepSeekKey", deepSeekKey);
+    m_settings->setValue("proxyHost", proxyHost);
+    m_settings->setValue("proxyPort", proxyPortStr);
+    m_settings->setValue("proxyUser", proxyUser);
+    m_settings->setValue("proxyPassword", proxyPassword);
+    m_settings->setValue("caCertPath", caCertPath);
     
     showInfo("API设置已保存并生效");
     
@@ -612,6 +683,14 @@ void MainWindow::onSetApiClicked()
     LOG_INFO(QString("appId: %1***").arg(appId.left(4)));
     LOG_INFO("secretKey: ******");
     LOG_INFO("deepSeekKey: ******");
+    if (!proxyHost.isEmpty()) {
+        LOG_INFO(QString("proxy: %1:%2").arg(proxyHost).arg(proxyPort));
+    } else {
+        LOG_INFO("proxy: <none>");
+    }
+    if (!caCertPath.isEmpty()) {
+        LOG_INFO(QString("cert: %1").arg(caCertPath));
+    }
 }
 
 void MainWindow::onTestApiClicked()
@@ -665,10 +744,20 @@ void MainWindow::loadSettings()
     QString appId = m_settings->value("appId", "").toString();
     QString secretKey = m_settings->value("secretKey", "").toString();
     QString deepSeekKey = m_settings->value("deepSeekKey", "").toString();
+    QString proxyHost = m_settings->value("proxyHost", "").toString();
+    QString proxyPortStr = m_settings->value("proxyPort", "").toString();
+    QString proxyUser = m_settings->value("proxyUser", "").toString();
+    QString proxyPassword = m_settings->value("proxyPassword", "").toString();
+    QString caCertPath = m_settings->value("caCertPath", "").toString();
     
     m_appIdEdit->setText(appId);
     m_secretKeyEdit->setText(secretKey);
     m_deepSeekKeyEdit->setText(deepSeekKey);
+    m_proxyHostEdit->setText(proxyHost);
+    m_proxyPortEdit->setText(proxyPortStr);
+    m_proxyUserEdit->setText(proxyUser);
+    m_proxyPasswordEdit->setText(proxyPassword);
+    m_caCertPathEdit->setText(caCertPath);
     
     // 设置到翻译器
     if (!appId.isEmpty() && !secretKey.isEmpty()) {
@@ -678,6 +767,11 @@ void MainWindow::loadSettings()
     if (!deepSeekKey.isEmpty()) {
         m_polisher->setApiKey(deepSeekKey);
     }
+    quint16 proxyPort = proxyPortStr.toUShort();
+    m_translator->setNetworkProxy(proxyHost, proxyPort, proxyUser, proxyPassword);
+    m_polisher->setNetworkProxy(proxyHost, proxyPort, proxyUser, proxyPassword);
+    m_translator->addCaCertificate(caCertPath);
+    m_polisher->addCaCertificate(caCertPath);
     
     // 加载语言设置，默认为英文 -> 中文
     QString fromLang = m_settings->value("fromLanguage", "en").toString();
@@ -781,6 +875,15 @@ void MainWindow::onShowTriggered()
 void MainWindow::onExitTriggered()
 {
     qApp->quit();
+}
+
+void MainWindow::onBrowseCertClicked()
+{
+    QString file = QFileDialog::getOpenFileName(this, "选择证书文件", QString(),
+                                               "Certificates (*.pem *.crt *.cer);;All Files (*)");
+    if (!file.isEmpty()) {
+        m_caCertPathEdit->setText(file);
+    }
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)

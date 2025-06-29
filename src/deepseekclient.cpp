@@ -2,8 +2,13 @@
 #include "config.h"
 #include "logger.h"
 #include <QNetworkRequest>
+#include <QNetworkProxy>
 #include <QJsonParseError>
 #include <QJsonArray>
+#include <QUrl>
+#include <QSslSocket>
+#include <QSslCertificate>
+#include <QFile>
 
 DeepSeekClient::DeepSeekClient(QObject *parent)
     : QObject(parent)
@@ -26,6 +31,42 @@ void DeepSeekClient::setApiKey(const QString &apiKey)
 bool DeepSeekClient::isApiConfigured() const
 {
     return !m_apiKey.isEmpty();
+}
+
+void DeepSeekClient::setNetworkProxy(const QString &host, quint16 port,
+                                      const QString &user,
+                                      const QString &password)
+{
+    if (host.isEmpty() || port == 0) {
+        m_networkManager->setProxy(QNetworkProxy());
+        LOG_INFO("取消网络代理设置(DeepSeek)");
+        return;
+    }
+
+    QNetworkProxy proxy(QNetworkProxy::HttpProxy, host, port, user, password);
+    m_networkManager->setProxy(proxy);
+    LOG_INFO(QString("设置DeepSeek网络代理 - %1:%2").arg(host).arg(port));
+}
+
+void DeepSeekClient::addCaCertificate(const QString &certPath)
+{
+    if (certPath.isEmpty()) {
+        return;
+    }
+
+    if (!QFile::exists(certPath)) {
+        LOG_WARNING(QString("证书文件不存在: %1").arg(certPath));
+        return;
+    }
+
+    const QList<QSslCertificate> certs = QSslCertificate::fromPath(certPath);
+    if (certs.isEmpty()) {
+        LOG_WARNING(QString("加载证书失败: %1").arg(certPath));
+        return;
+    }
+
+    QSslSocket::addDefaultCaCertificates(certs);
+    LOG_INFO(QString("导入CA证书(DeepSeek): %1").arg(certPath));
 }
 
 void DeepSeekClient::polishText(const QString &text)

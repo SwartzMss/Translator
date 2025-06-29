@@ -19,6 +19,14 @@ public:
 
     void polishText(const QString &text);
 
+    // 设置网络代理
+    void setNetworkProxy(const QString &host, quint16 port,
+                         const QString &user = QString(),
+                         const QString &password = QString());
+
+    // 导入自定义CA证书
+    void addCaCertificate(const QString &certPath);
+
 signals:
     void polishFinished(const QString &polishedText);
     void polishError(const QString &errorMessage);
