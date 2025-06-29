@@ -114,7 +114,14 @@ void MainWindow::setupUi()
     deepSeekLayout->addWidget(deepSeekLabel);
     deepSeekLayout->addWidget(m_deepSeekKeyEdit);
 
-    // Proxy Host
+    // 代理设置区域
+    QGroupBox *proxyGroup = new QGroupBox("代理设置", this);
+    QVBoxLayout *proxyLayout = new QVBoxLayout(proxyGroup);
+    proxyLayout->setSpacing(10);
+
+    m_proxyEnableCheck = new QCheckBox("启用代理", this);
+    proxyLayout->addWidget(m_proxyEnableCheck);
+
     QHBoxLayout *proxyHostLayout = new QHBoxLayout();
     QLabel *proxyHostLabel = new QLabel("代理IP:", this);
     proxyHostLabel->setMinimumWidth(80);
@@ -123,7 +130,6 @@ void MainWindow::setupUi()
     proxyHostLayout->addWidget(proxyHostLabel);
     proxyHostLayout->addWidget(m_proxyHostEdit);
 
-    // Proxy Port
     QHBoxLayout *proxyPortLayout = new QHBoxLayout();
     QLabel *proxyPortLabel = new QLabel("端口:", this);
     proxyPortLabel->setMinimumWidth(80);
@@ -132,7 +138,6 @@ void MainWindow::setupUi()
     proxyPortLayout->addWidget(proxyPortLabel);
     proxyPortLayout->addWidget(m_proxyPortEdit);
 
-    // Proxy User
     QHBoxLayout *proxyUserLayout = new QHBoxLayout();
     QLabel *proxyUserLabel = new QLabel("用户名:", this);
     proxyUserLabel->setMinimumWidth(80);
@@ -141,7 +146,6 @@ void MainWindow::setupUi()
     proxyUserLayout->addWidget(proxyUserLabel);
     proxyUserLayout->addWidget(m_proxyUserEdit);
 
-    // Proxy Password
     QHBoxLayout *proxyPassLayout = new QHBoxLayout();
     QLabel *proxyPassLabel = new QLabel("密码:", this);
     proxyPassLabel->setMinimumWidth(80);
@@ -151,7 +155,6 @@ void MainWindow::setupUi()
     proxyPassLayout->addWidget(proxyPassLabel);
     proxyPassLayout->addWidget(m_proxyPasswordEdit);
 
-    // CA Certificate
     QHBoxLayout *certLayout = new QHBoxLayout();
     QLabel *certLabel = new QLabel("证书文件:", this);
     certLabel->setMinimumWidth(80);
@@ -161,6 +164,12 @@ void MainWindow::setupUi()
     certLayout->addWidget(certLabel);
     certLayout->addWidget(m_caCertPathEdit);
     certLayout->addWidget(m_browseCertButton);
+
+    proxyLayout->addLayout(proxyHostLayout);
+    proxyLayout->addLayout(proxyPortLayout);
+    proxyLayout->addLayout(proxyUserLayout);
+    proxyLayout->addLayout(proxyPassLayout);
+    proxyLayout->addLayout(certLayout);
     
     // API配置按钮
     QHBoxLayout *apiButtonLayout = new QHBoxLayout();
@@ -201,12 +210,10 @@ void MainWindow::setupUi()
     apiLayout->addLayout(appIdLayout);
     apiLayout->addLayout(secretKeyLayout);
     apiLayout->addLayout(deepSeekLayout);
-    apiLayout->addLayout(proxyHostLayout);
-    apiLayout->addLayout(proxyPortLayout);
-    apiLayout->addLayout(proxyUserLayout);
-    apiLayout->addLayout(proxyPassLayout);
-    apiLayout->addLayout(certLayout);
     apiLayout->addLayout(apiButtonLayout);
+
+    m_mainLayout->addWidget(apiGroup);
+    m_mainLayout->addWidget(proxyGroup);
     
     // 创建TabWidget
     m_tabWidget = new QTabWidget(this);
@@ -375,7 +382,6 @@ void MainWindow::setupUi()
     statusLayout->addWidget(m_statusLabel);
     
     // 组装布局 - API配置区域移到最上面
-    m_mainLayout->addWidget(apiGroup);
     m_mainLayout->addWidget(m_tabWidget);
     m_mainLayout->addLayout(statusLayout);
     
@@ -487,6 +493,14 @@ void MainWindow::setupConnections()
     connect(m_testApiButton, &QPushButton::clicked, this, &MainWindow::onTestApiClicked);
     connect(m_swapButton, &QPushButton::clicked, this, &MainWindow::onSwapLanguagesClicked);
     connect(m_browseCertButton, &QPushButton::clicked, this, &MainWindow::onBrowseCertClicked);
+    connect(m_proxyEnableCheck, &QCheckBox::toggled, [this](bool checked) {
+        m_proxyHostEdit->setEnabled(checked);
+        m_proxyPortEdit->setEnabled(checked);
+        m_proxyUserEdit->setEnabled(checked);
+        m_proxyPasswordEdit->setEnabled(checked);
+        m_caCertPathEdit->setEnabled(checked);
+        m_browseCertButton->setEnabled(checked);
+    });
     
     LOG_DEBUG("信号连接设置完成");
 }
@@ -642,6 +656,7 @@ void MainWindow::onSetApiClicked()
     QString appId = m_appIdEdit->text().trimmed();
     QString secretKey = m_secretKeyEdit->text().trimmed();
     QString deepSeekKey = m_deepSeekKeyEdit->text().trimmed();
+    bool proxyEnabled = m_proxyEnableCheck->isChecked();
     QString proxyHost = m_proxyHostEdit->text().trimmed();
     QString proxyPortStr = m_proxyPortEdit->text().trimmed();
     QString proxyUser = m_proxyUserEdit->text().trimmed();
@@ -657,8 +672,13 @@ void MainWindow::onSetApiClicked()
     m_translator->setApiCredentials(appId, secretKey);
 
     quint16 proxyPort = proxyPortStr.toUShort();
-    m_translator->setNetworkProxy(proxyHost, proxyPort, proxyUser, proxyPassword);
-    m_polisher->setNetworkProxy(proxyHost, proxyPort, proxyUser, proxyPassword);
+    if (proxyEnabled) {
+        m_translator->setNetworkProxy(proxyHost, proxyPort, proxyUser, proxyPassword);
+        m_polisher->setNetworkProxy(proxyHost, proxyPort, proxyUser, proxyPassword);
+    } else {
+        m_translator->setNetworkProxy(QString(), 0);
+        m_polisher->setNetworkProxy(QString(), 0);
+    }
     m_translator->addCaCertificate(caCertPath);
     m_polisher->addCaCertificate(caCertPath);
 
@@ -671,6 +691,7 @@ void MainWindow::onSetApiClicked()
     m_settings->setValue("appId", appId);
     m_settings->setValue("secretKey", secretKey);
     m_settings->setValue("deepSeekKey", deepSeekKey);
+    m_settings->setValue("proxyEnabled", proxyEnabled);
     m_settings->setValue("proxyHost", proxyHost);
     m_settings->setValue("proxyPort", proxyPortStr);
     m_settings->setValue("proxyUser", proxyUser);
@@ -683,7 +704,7 @@ void MainWindow::onSetApiClicked()
     LOG_INFO(QString("appId: %1***").arg(appId.left(4)));
     LOG_INFO("secretKey: ******");
     LOG_INFO("deepSeekKey: ******");
-    if (!proxyHost.isEmpty()) {
+    if (proxyEnabled && !proxyHost.isEmpty()) {
         LOG_INFO(QString("proxy: %1:%2").arg(proxyHost).arg(proxyPort));
     } else {
         LOG_INFO("proxy: <none>");
@@ -744,6 +765,7 @@ void MainWindow::loadSettings()
     QString appId = m_settings->value("appId", "").toString();
     QString secretKey = m_settings->value("secretKey", "").toString();
     QString deepSeekKey = m_settings->value("deepSeekKey", "").toString();
+    bool proxyEnabled = m_settings->value("proxyEnabled", false).toBool();
     QString proxyHost = m_settings->value("proxyHost", "").toString();
     QString proxyPortStr = m_settings->value("proxyPort", "").toString();
     QString proxyUser = m_settings->value("proxyUser", "").toString();
@@ -753,11 +775,19 @@ void MainWindow::loadSettings()
     m_appIdEdit->setText(appId);
     m_secretKeyEdit->setText(secretKey);
     m_deepSeekKeyEdit->setText(deepSeekKey);
+    m_proxyEnableCheck->setChecked(proxyEnabled);
     m_proxyHostEdit->setText(proxyHost);
     m_proxyPortEdit->setText(proxyPortStr);
     m_proxyUserEdit->setText(proxyUser);
     m_proxyPasswordEdit->setText(proxyPassword);
     m_caCertPathEdit->setText(caCertPath);
+
+    m_proxyHostEdit->setEnabled(proxyEnabled);
+    m_proxyPortEdit->setEnabled(proxyEnabled);
+    m_proxyUserEdit->setEnabled(proxyEnabled);
+    m_proxyPasswordEdit->setEnabled(proxyEnabled);
+    m_caCertPathEdit->setEnabled(proxyEnabled);
+    m_browseCertButton->setEnabled(proxyEnabled);
     
     // 设置到翻译器
     if (!appId.isEmpty() && !secretKey.isEmpty()) {
@@ -768,8 +798,13 @@ void MainWindow::loadSettings()
         m_polisher->setApiKey(deepSeekKey);
     }
     quint16 proxyPort = proxyPortStr.toUShort();
-    m_translator->setNetworkProxy(proxyHost, proxyPort, proxyUser, proxyPassword);
-    m_polisher->setNetworkProxy(proxyHost, proxyPort, proxyUser, proxyPassword);
+    if (proxyEnabled) {
+        m_translator->setNetworkProxy(proxyHost, proxyPort, proxyUser, proxyPassword);
+        m_polisher->setNetworkProxy(proxyHost, proxyPort, proxyUser, proxyPassword);
+    } else {
+        m_translator->setNetworkProxy(QString(), 0);
+        m_polisher->setNetworkProxy(QString(), 0);
+    }
     m_translator->addCaCertificate(caCertPath);
     m_polisher->addCaCertificate(caCertPath);
     

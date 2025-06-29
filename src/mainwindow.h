@@ -11,6 +11,7 @@
 #include <QMessageBox>
 #include <QSettings>
 #include <QLineEdit>
+#include <QCheckBox>
 #include <QSystemTrayIcon>
 #include <QMenu>
 #include <QAction>
@@ -92,6 +93,7 @@ private:
     QLineEdit *m_appIdEdit;
     QLineEdit *m_secretKeyEdit;
     QLineEdit *m_deepSeekKeyEdit;
+    QCheckBox *m_proxyEnableCheck;
     QLineEdit *m_proxyHostEdit;
     QLineEdit *m_proxyPortEdit;
     QLineEdit *m_proxyUserEdit;
