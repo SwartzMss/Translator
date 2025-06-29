@@ -25,6 +25,14 @@ public:
     // 检查API密钥是否已设置
     bool isApiConfigured() const;
 
+    // 设置网络代理
+    void setNetworkProxy(const QString &host, quint16 port,
+                         const QString &user = QString(),
+                         const QString &password = QString());
+
+    // 导入自定义CA证书
+    void addCaCertificate(const QString &certPath);
+
 signals:
     // 翻译完成信号
     void translationFinished(const QString &translatedText, const QString &detectedLang);

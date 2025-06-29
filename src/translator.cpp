@@ -2,10 +2,16 @@
 #include "config.h"
 #include "logger.h"
 #include <QNetworkRequest>
+#include <QNetworkProxy>
+#include <QUrl>
 #include <QUrlQuery>
+#include <QDateTime>
 #include <QCryptographicHash>
 #include <QJsonParseError>
 #include <QDebug>
+#include <QSslSocket>
+#include <QSslCertificate>
+#include <QFile>
 
 Translator::Translator(QObject *parent)
     : QObject(parent)
@@ -30,6 +36,42 @@ void Translator::setApiCredentials(const QString &appId, const QString &secretKe
 bool Translator::isApiConfigured() const
 {
     return !m_appId.isEmpty() && !m_secretKey.isEmpty();
+}
+
+void Translator::setNetworkProxy(const QString &host, quint16 port,
+                                 const QString &user,
+                                 const QString &password)
+{
+    if (host.isEmpty() || port == 0) {
+        m_networkManager->setProxy(QNetworkProxy());
+        LOG_INFO("取消网络代理设置");
+        return;
+    }
+
+    QNetworkProxy proxy(QNetworkProxy::HttpProxy, host, port, user, password);
+    m_networkManager->setProxy(proxy);
+    LOG_INFO(QString("设置网络代理 - %1:%2").arg(host).arg(port));
+}
+
+void Translator::addCaCertificate(const QString &certPath)
+{
+    if (certPath.isEmpty()) {
+        return;
+    }
+
+    if (!QFile::exists(certPath)) {
+        LOG_WARNING(QString("证书文件不存在: %1").arg(certPath));
+        return;
+    }
+
+    const QList<QSslCertificate> certs = QSslCertificate::fromPath(certPath);
+    if (certs.isEmpty()) {
+        LOG_WARNING(QString("加载证书失败: %1").arg(certPath));
+        return;
+    }
+
+    QSslSocket::addDefaultCaCertificates(certs);
+    LOG_INFO(QString("导入CA证书: %1").arg(certPath));
 }
 
 void Translator::translateText(const QString &text, const QString &fromLang, const QString &toLang)
