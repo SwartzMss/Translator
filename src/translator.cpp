@@ -166,12 +166,13 @@ void Translator::onNetworkError(QNetworkReply::NetworkError error)
         errorMsg = "请求超时";
         break;
     default:
-        errorMsg = "网络错误: " + reply->errorString();
+        errorMsg = reply->errorString();
         break;
     }
 
-    LOG_ERROR(QString("网络错误: %1").arg(errorMsg));
-    emit translationError(errorMsg);
+    QString fullMsg = QStringLiteral("网络错误: %1").arg(errorMsg);
+    LOG_ERROR(fullMsg);
+    emit translationError(fullMsg);
 }
 
 void Translator::parseTranslationResult(const QByteArray &data)
