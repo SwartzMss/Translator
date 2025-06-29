@@ -9,6 +9,7 @@
 #include <QSslSocket>
 #include <QSslCertificate>
 #include <QFile>
+#include <QSslConfiguration>
 
 DeepSeekClient::DeepSeekClient(QObject *parent)
     : QObject(parent)
@@ -65,7 +66,13 @@ void DeepSeekClient::addCaCertificate(const QString &certPath)
         return;
     }
 
-    QSslSocket::addDefaultCaCertificates(certs);
+    // Qt 6 兼容的方法：使用 QSslConfiguration 来添加 CA 证书
+    QSslConfiguration sslConfig = QSslConfiguration::defaultConfiguration();
+    QList<QSslCertificate> caCerts = sslConfig.caCertificates();
+    caCerts.append(certs);
+    sslConfig.setCaCertificates(caCerts);
+    QSslConfiguration::setDefaultConfiguration(sslConfig);
+    
     LOG_INFO(QString("导入CA证书(DeepSeek): %1").arg(certPath));
 }
 
