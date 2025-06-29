@@ -2,17 +2,13 @@
 #include "config.h"
 #include "logger.h"
 #include <QNetworkRequest>
-#include <QNetworkProxy>
+#include "networkproxy.h"
 #include <QUrl>
 #include <QUrlQuery>
 #include <QDateTime>
 #include <QCryptographicHash>
 #include <QJsonParseError>
 #include <QDebug>
-#include <QSslSocket>
-#include <QSslCertificate>
-#include <QFile>
-#include <QSslConfiguration>
 
 Translator::Translator(QObject *parent)
     : QObject(parent)
@@ -43,42 +39,17 @@ void Translator::setNetworkProxy(const QString &host, quint16 port,
                                  const QString &user,
                                  const QString &password)
 {
-    if (host.isEmpty() || port == 0) {
-        m_networkManager->setProxy(QNetworkProxy());
-        LOG_INFO("取消网络代理设置");
-        return;
-    }
-
-    QNetworkProxy proxy(QNetworkProxy::HttpProxy, host, port, user, password);
-    m_networkManager->setProxy(proxy);
-    LOG_INFO(QString("设置网络代理 - %1:%2").arg(host).arg(port));
+    ProxySettings settings;
+    settings.host = host;
+    settings.port = port;
+    settings.user = user;
+    settings.password = password;
+    NetworkProxy::applyProxy(m_networkManager, settings);
 }
 
 void Translator::addCaCertificate(const QString &certPath)
 {
-    if (certPath.isEmpty()) {
-        return;
-    }
-
-    if (!QFile::exists(certPath)) {
-        LOG_WARNING(QString("证书文件不存在: %1").arg(certPath));
-        return;
-    }
-
-    const QList<QSslCertificate> certs = QSslCertificate::fromPath(certPath);
-    if (certs.isEmpty()) {
-        LOG_WARNING(QString("加载证书失败: %1").arg(certPath));
-        return;
-    }
-
-    // Qt 6 兼容的方法：使用 QSslConfiguration 来添加 CA 证书
-    QSslConfiguration sslConfig = QSslConfiguration::defaultConfiguration();
-    QList<QSslCertificate> caCerts = sslConfig.caCertificates();
-    caCerts.append(certs);
-    sslConfig.setCaCertificates(caCerts);
-    QSslConfiguration::setDefaultConfiguration(sslConfig);
-    
-    LOG_INFO(QString("导入CA证书: %1").arg(certPath));
+    NetworkProxy::installCaCertificate(certPath);
 }
 
 void Translator::translateText(const QString &text, const QString &fromLang, const QString &toLang)
