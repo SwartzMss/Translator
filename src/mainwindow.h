@@ -43,7 +43,6 @@ private slots:
     void onTranslationError(const QString &errorMessage);
     void onPolishFinished(const QString &polishedText);
     void onPolishError(const QString &errorMessage);
-    void onSetApiClicked();
     void onTestApiClicked();
     void onSwapLanguagesClicked();
     void onTrayActivated(QSystemTrayIcon::ActivationReason reason);
@@ -51,6 +50,7 @@ private slots:
     void onExitTriggered();
     void onBrowseCertClicked();
     void onSettingsClicked();
+    void onSettingsOkClicked();
 
 private:
     void setupUi();
@@ -104,7 +104,6 @@ private:
     QLineEdit *m_appIdEdit;
     QLineEdit *m_secretKeyEdit;
     QLineEdit *m_deepSeekKeyEdit;
-    QPushButton *m_setApiButton;
     QPushButton *m_testApiButton;
     
     // 代理设置Tab组件

@@ -485,69 +485,6 @@ void MainWindow::onSettingsClicked()
     m_settingsDialog->activateWindow();
 }
 
-void MainWindow::onSetApiClicked()
-{
-    QString appId = m_appIdEdit->text().trimmed();
-    QString secretKey = m_secretKeyEdit->text().trimmed();
-    QString deepSeekKey = m_deepSeekKeyEdit->text().trimmed();
-    bool proxyEnabled = m_proxyEnableCheck->isChecked();
-    QString proxyHost = m_proxyHostEdit->text().trimmed();
-    QString proxyPortStr = m_proxyPortEdit->text().trimmed();
-    QString proxyUser = m_proxyUserEdit->text().trimmed();
-    QString proxyPassword = m_proxyPasswordEdit->text().trimmed();
-    QString caCertPath = m_caCertPathEdit->text().trimmed();
-
-    if (appId.isEmpty() || secretKey.isEmpty()) {
-        showError("App ID和Secret Key不能为空");
-        return;
-    }
-
-    // 设置到翻译器
-    m_translator->setApiCredentials(appId, secretKey);
-
-    quint16 proxyPort = proxyPortStr.toUShort();
-    if (proxyEnabled) {
-        m_translator->setNetworkProxy(proxyHost, proxyPort, proxyUser, proxyPassword);
-        m_polisher->setNetworkProxy(proxyHost, proxyPort, proxyUser, proxyPassword);
-    } else {
-        m_translator->setNetworkProxy(QString(), 0);
-        m_polisher->setNetworkProxy(QString(), 0);
-    }
-    m_translator->addCaCertificate(caCertPath);
-    m_polisher->addCaCertificate(caCertPath);
-
-    // DeepSeek Key 可选
-    if (!deepSeekKey.isEmpty()) {
-        m_polisher->setApiKey(deepSeekKey);
-    }
-    
-    // 保存到配置文件
-    m_settings->setValue("appId", appId);
-    m_settings->setValue("secretKey", secretKey);
-    m_settings->setValue("deepSeekKey", deepSeekKey);
-    m_settings->setValue("proxyEnabled", proxyEnabled);
-    m_settings->setValue("proxyHost", proxyHost);
-    m_settings->setValue("proxyPort", proxyPortStr);
-    m_settings->setValue("proxyUser", proxyUser);
-    m_settings->setValue("proxyPassword", proxyPassword);
-    m_settings->setValue("caCertPath", caCertPath);
-    
-    showInfo("API设置已保存并生效");
-    
-    LOG_INFO("API设置 - 设置并保存API密钥");
-    LOG_INFO(QString("appId: %1***").arg(appId.left(4)));
-    LOG_INFO("secretKey: ******");
-    LOG_INFO("deepSeekKey: ******");
-    if (proxyEnabled && !proxyHost.isEmpty()) {
-        LOG_INFO(QString("proxy: %1:%2").arg(proxyHost).arg(proxyPort));
-    } else {
-        LOG_INFO("proxy: <none>");
-    }
-    if (!caCertPath.isEmpty()) {
-        LOG_INFO(QString("cert: %1").arg(caCertPath));
-    }
-}
-
 void MainWindow::onTestApiClicked()
 {
     QString appId = m_appIdEdit->text().trimmed();
@@ -674,7 +611,51 @@ void MainWindow::saveSettings()
     m_settings->setValue("fromLanguage", fromLang);
     m_settings->setValue("toLanguage", toLang);
     
+    // 保存API配置
+    QString appId = m_appIdEdit->text().trimmed();
+    QString secretKey = m_secretKeyEdit->text().trimmed();
+    QString deepSeekKey = m_deepSeekKeyEdit->text().trimmed();
+    
+    m_settings->setValue("appId", appId);
+    m_settings->setValue("secretKey", secretKey);
+    m_settings->setValue("deepSeekKey", deepSeekKey);
+    
+    // 保存代理设置
+    bool proxyEnabled = m_proxyEnableCheck->isChecked();
+    QString proxyHost = m_proxyHostEdit->text().trimmed();
+    QString proxyPortStr = m_proxyPortEdit->text().trimmed();
+    QString proxyUser = m_proxyUserEdit->text().trimmed();
+    QString proxyPassword = m_proxyPasswordEdit->text().trimmed();
+    QString caCertPath = m_caCertPathEdit->text().trimmed();
+    
+    m_settings->setValue("proxyEnabled", proxyEnabled);
+    m_settings->setValue("proxyHost", proxyHost);
+    m_settings->setValue("proxyPort", proxyPortStr);
+    m_settings->setValue("proxyUser", proxyUser);
+    m_settings->setValue("proxyPassword", proxyPassword);
+    m_settings->setValue("caCertPath", caCertPath);
+    
+    // 应用配置到翻译器
+    if (!appId.isEmpty() && !secretKey.isEmpty()) {
+        m_translator->setApiCredentials(appId, secretKey);
+    }
+    if (!deepSeekKey.isEmpty()) {
+        m_polisher->setApiKey(deepSeekKey);
+    }
+    
+    quint16 proxyPort = proxyPortStr.toUShort();
+    if (proxyEnabled) {
+        m_translator->setNetworkProxy(proxyHost, proxyPort, proxyUser, proxyPassword);
+        m_polisher->setNetworkProxy(proxyHost, proxyPort, proxyUser, proxyPassword);
+    } else {
+        m_translator->setNetworkProxy(QString(), 0);
+        m_polisher->setNetworkProxy(QString(), 0);
+    }
+    m_translator->addCaCertificate(caCertPath);
+    m_polisher->addCaCertificate(caCertPath);
+    
     LOG_DEBUG("设置保存完成");
+    LOG_INFO("所有配置已保存并生效");
 }
 
 QString MainWindow::getLanguageCode(const QString &languageName)
@@ -819,21 +800,6 @@ void MainWindow::createSettingsDialog()
     
     // API配置按钮
     QHBoxLayout *apiButtonLayout = new QHBoxLayout();
-    m_setApiButton = new QPushButton("设置并保存", m_apiTab);
-    m_setApiButton->setStyleSheet(
-        "QPushButton {"
-        "    background-color: #28a745;"
-        "    color: white;"
-        "    border: none;"
-        "    border-radius: 5px;"
-        "    padding: 8px 15px;"
-        "    font-weight: bold;"
-        "}"
-        "QPushButton:hover {"
-        "    background-color: #218838;"
-        "}"
-    );
-    
     m_testApiButton = new QPushButton("检测连接", m_apiTab);
     m_testApiButton->setStyleSheet(
         "QPushButton {"
@@ -849,7 +815,6 @@ void MainWindow::createSettingsDialog()
         "}"
     );
     
-    apiButtonLayout->addWidget(m_setApiButton);
     apiButtonLayout->addWidget(m_testApiButton);
     apiButtonLayout->addStretch();
     
@@ -963,9 +928,10 @@ void MainWindow::createSettingsDialog()
     dialogLayout->addLayout(dialogButtonLayout);
     
     // 连接信号
-    connect(m_setApiButton, &QPushButton::clicked, this, &MainWindow::onSetApiClicked);
     connect(m_testApiButton, &QPushButton::clicked, this, &MainWindow::onTestApiClicked);
     connect(m_browseCertButton, &QPushButton::clicked, this, &MainWindow::onBrowseCertClicked);
+    connect(okButton, &QPushButton::clicked, this, &MainWindow::onSettingsOkClicked);
+    connect(cancelButton, &QPushButton::clicked, m_settingsDialog, &QDialog::reject);
     connect(m_proxyEnableCheck, &QCheckBox::toggled, [this](bool checked) {
         m_proxyHostEdit->setEnabled(checked);
         m_proxyPortEdit->setEnabled(checked);
@@ -974,8 +940,6 @@ void MainWindow::createSettingsDialog()
         m_caCertPathEdit->setEnabled(checked);
         m_browseCertButton->setEnabled(checked);
     });
-    connect(okButton, &QPushButton::clicked, m_settingsDialog, &QDialog::accept);
-    connect(cancelButton, &QPushButton::clicked, m_settingsDialog, &QDialog::reject);
     
     // 设置对话框样式
     m_settingsDialog->setStyleSheet(
@@ -1016,4 +980,12 @@ void MainWindow::createSettingsDialog()
     );
     
     LOG_DEBUG("设置对话框创建完成");
+}
+
+void MainWindow::onSettingsOkClicked()
+{
+    // 保存设置并关闭对话框
+    saveSettings();
+    showInfo("所有配置已保存并生效");
+    m_settingsDialog->accept();
 }
