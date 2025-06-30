@@ -18,7 +18,8 @@ SOURCES += \
     src/translator.cpp \
     src/logger.cpp \
     src/deepseekclient.cpp \
-    src/networkproxy.cpp
+    src/networkproxy.cpp \
+    src/tlshttpproxy.cpp
 
 # 头文件
 HEADERS += \
@@ -27,7 +28,8 @@ HEADERS += \
     src/config.h \
     src/logger.h \
     src/deepseekclient.h \
-    src/networkproxy.h
+    src/networkproxy.h \
+    src/tlshttpproxy.h
 
 # 资源文件
 RESOURCES += \
