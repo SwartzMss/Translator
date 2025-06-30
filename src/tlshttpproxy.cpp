@@ -46,6 +46,7 @@ void TlsHttpProxy::appendDebug(const QString &msg)
     qDebug() << stamped;
 }
 
+
 void TlsHttpProxy::finishError(const QString &msg)
 {
     appendDebug("ERROR: " + msg);
