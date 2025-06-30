@@ -57,6 +57,7 @@ void TlsHttpProxy::finishError(const QString &msg)
 
 void TlsHttpProxy::fetch(const QString &url)
 {
+    m_isPost = false;
     if (m_connecting)
         return;
 
@@ -82,6 +83,35 @@ void TlsHttpProxy::fetch(const QString &url)
 
     m_timer->start(30000); // 30s timeout
 
+    m_worker = QThread::create([this]() { perform(); });
+    connect(m_worker, &QThread::finished, m_worker, &QObject::deleteLater);
+    m_worker->start();
+}
+
+void TlsHttpProxy::post(const QString &url, const QByteArray &data, const QString &contentType)
+{
+    if (m_connecting)
+        return;
+    if (m_proxyHost.isEmpty() || m_proxyPort <= 0) {
+        emit finished(false, tr("请填写有效的代理地址和端口"));
+        return;
+    }
+    const QUrl u(url);
+    if (!u.isValid() || u.host().isEmpty()) {
+        emit finished(false, tr("无效的目标URL"));
+        return;
+    }
+    m_targetUrl = url;
+    m_postData = data;
+    m_contentType = contentType;
+    m_isPost = true;
+    m_connecting = true;
+    m_headerBuf.clear();
+    m_bodyBuf.clear();
+    m_debugLines.clear();
+    emit started();
+    appendDebug(tr("开始POST流程 -> %1 via %2:%3").arg(m_targetUrl).arg(m_proxyHost).arg(m_proxyPort));
+    m_timer->start(30000); // 30s timeout
     m_worker = QThread::create([this]() { perform(); });
     connect(m_worker, &QThread::finished, m_worker, &QObject::deleteLater);
     m_worker->start();
@@ -123,18 +153,16 @@ void TlsHttpProxy::perform()
         QMetaObject::invokeMethod(this, [this]() { finishError(tr("初始化curl失败")); }, Qt::QueuedConnection);
         return;
     }
-
+    struct curl_slist *headers = nullptr;
     curl_easy_setopt(curl, CURLOPT_URL, m_targetUrl.toUtf8().constData());
     curl_easy_setopt(curl, CURLOPT_PROXY, m_proxyHost.toUtf8().constData());
     curl_easy_setopt(curl, CURLOPT_PROXYPORT, m_proxyPort);
     curl_easy_setopt(curl, CURLOPT_PROXYTYPE, CURLPROXY_HTTPS);
     curl_easy_setopt(curl, CURLOPT_HTTPPROXYTUNNEL, 1L);
-
     if (!m_proxyUser.isEmpty()) {
         QByteArray auth = QString("%1:%2").arg(m_proxyUser, m_proxyPass).toUtf8();
         curl_easy_setopt(curl, CURLOPT_PROXYUSERPWD, auth.constData());
     }
-
     if (!m_caPath.isEmpty()) {
         curl_easy_setopt(curl, CURLOPT_CAINFO, m_caPath.toUtf8().constData());
         curl_easy_setopt(curl, CURLOPT_PROXY_CAINFO, m_caPath.toUtf8().constData());
@@ -154,17 +182,24 @@ void TlsHttpProxy::perform()
         curl_easy_setopt(curl, CURLOPT_PROXY_SSL_VERIFYHOST, 0L);
         appendDebug("警告: 未提供CA证书，SSL验证已禁用");
     }
-
+    if (m_isPost) {
+        curl_easy_setopt(curl, CURLOPT_POST, 1L);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, m_postData.constData());
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, m_postData.size());
+        headers = curl_slist_append(headers, QString("Content-Type: %1").arg(m_contentType).toUtf8().constData());
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+    }
     curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, &TlsHttpProxy::headerCallback);
     curl_easy_setopt(curl, CURLOPT_HEADERDATA, this);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &TlsHttpProxy::writeCallback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, this);
-
     CURLcode res = curl_easy_perform(curl);
     long response = 0;
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response);
+    if (headers) {
+        curl_slist_free_all(headers);
+    }
     curl_easy_cleanup(curl);
-
     QMetaObject::invokeMethod(this, [this, res, response]() {
         m_timer->stop();
         m_connecting = false;
@@ -187,16 +222,7 @@ void TlsHttpProxy::perform()
             finishError(tr("HTTP 状态码 %1").arg(response));
             return;
         }
-        QString result;
-        result += "=== 连接成功 ===\n";
-        result += QString("HTTP 状态 %1\n\n").arg(response);
-        if (m_bodyBuf.startsWith("<!DOCTYPE") || m_bodyBuf.startsWith("<html")) {
-            result += QString::fromUtf8(m_bodyBuf);
-        } else {
-            result += QString("[二进制内容, 前 128 字节十六进制]\n%1")
-                          .arg(QString(m_bodyBuf.left(128).toHex(' ')));
-        }
-        emit finished(true, result);
+        emit finished(true, QString::fromUtf8(m_bodyBuf));
     }, Qt::QueuedConnection);
 }
 

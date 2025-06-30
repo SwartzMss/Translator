@@ -20,6 +20,7 @@ public:
     void setCaCertificate(const QString &path);
 
     void fetch(const QString &url);
+    void post(const QString &url, const QByteArray &data, const QString &contentType = "application/json");
     void cancel();
 
 signals:
@@ -48,6 +49,10 @@ private:
     bool m_connecting = false;
     QThread *m_worker = nullptr;
     QTimer *m_timer;
+
+    QByteArray m_postData;
+    QString m_contentType;
+    bool m_isPost = false;
 };
 
 #endif // TLSHTTPPROXY_H

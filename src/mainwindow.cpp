@@ -21,7 +21,6 @@
 #include <QAction>
 #include <QCloseEvent>
 #include <QFileDialog>
-#include "networkproxy.h"
 #include "deepseekclient.h"
 
 MainWindow::MainWindow(QWidget *parent)
@@ -44,7 +43,6 @@ MainWindow::MainWindow(QWidget *parent)
     setupConnections();
     createTrayIcon();
     loadSettings();
-    applyProxyFromEnvironment();
 
     // 设置窗口属性
     setWindowTitle("百度翻译工具");
@@ -575,11 +573,11 @@ void MainWindow::loadSettings()
     }
     quint16 proxyPort = proxyPortStr.toUShort();
     if (proxyEnabled) {
-        m_translator->setNetworkProxy(proxyHost, proxyPort, proxyUser, proxyPassword);
-        m_polisher->setNetworkProxy(proxyHost, proxyPort, proxyUser, proxyPassword);
+        m_translator->setProxy(proxyHost, proxyPort, proxyUser, proxyPassword);
+        m_polisher->setProxy(proxyHost, proxyPort, proxyUser, proxyPassword);
     } else {
-        m_translator->setNetworkProxy(QString(), 0);
-        m_polisher->setNetworkProxy(QString(), 0);
+        m_translator->setProxy(QString(), 0);
+        m_polisher->setProxy(QString(), 0);
     }
     m_translator->addCaCertificate(caCertPath);
     m_polisher->addCaCertificate(caCertPath);
@@ -647,11 +645,11 @@ void MainWindow::saveSettings()
     
     quint16 proxyPort = proxyPortStr.toUShort();
     if (proxyEnabled) {
-        m_translator->setNetworkProxy(proxyHost, proxyPort, proxyUser, proxyPassword);
-        m_polisher->setNetworkProxy(proxyHost, proxyPort, proxyUser, proxyPassword);
+        m_translator->setProxy(proxyHost, proxyPort, proxyUser, proxyPassword);
+        m_polisher->setProxy(proxyHost, proxyPort, proxyUser, proxyPassword);
     } else {
-        m_translator->setNetworkProxy(QString(), 0);
-        m_polisher->setNetworkProxy(QString(), 0);
+        m_translator->setProxy(QString(), 0);
+        m_polisher->setProxy(QString(), 0);
     }
     m_translator->addCaCertificate(caCertPath);
     m_polisher->addCaCertificate(caCertPath);
@@ -990,22 +988,4 @@ void MainWindow::onSettingsOkClicked()
     saveSettings();
     showInfo("所有配置已保存并生效");
     m_settingsDialog->accept();
-}
-
-void MainWindow::applyProxyFromEnvironment()
-{
-    if (m_settings->value("proxyEnabled", false).toBool()) {
-        return; // 已在配置中启用代理
-    }
-
-    ProxySettings settings;
-    if (!NetworkProxy::loadFromEnvironment(settings)) {
-        return;
-    }
-
-    m_translator->setNetworkProxy(settings.host, settings.port,
-                                  settings.user, settings.password);
-    m_polisher->setNetworkProxy(settings.host, settings.port,
-                                settings.user, settings.password);
-    LOG_INFO(QString("环境变量设置代理: %1:%2").arg(settings.host).arg(settings.port));
 }
