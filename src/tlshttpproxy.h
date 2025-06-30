@@ -18,6 +18,7 @@ public:
                   const QString &user = QString(),
                   const QString &password = QString());
     void setCaCertificate(const QString &path);
+    void setApiKey(const QString &key) { m_apiKey = key; }
 
     void fetch(const QString &url);
     void post(const QString &url, const QByteArray &data, const QString &contentType = "application/json");
@@ -53,6 +54,8 @@ private:
     QByteArray m_postData;
     QString m_contentType;
     bool m_isPost = false;
+
+    QString m_apiKey;
 };
 
 #endif // TLSHTTPPROXY_H

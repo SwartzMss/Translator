@@ -205,6 +205,11 @@ void TlsHttpProxy::perform()
         headers = curl_slist_append(headers, contentTypeHeader.toUtf8().constData());
         appendDebug("POST请求Header: " + contentTypeHeader);
         appendDebug("POST请求Body: " + QString::fromUtf8(m_postData.left(1024)));
+        if (!m_apiKey.isEmpty()) {
+            QString authHeader = QString("Authorization: Bearer %1").arg(m_apiKey);
+            headers = curl_slist_append(headers, authHeader.toUtf8().constData());
+            appendDebug("POST请求Header: " + authHeader);
+        }
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
     }
     curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, &TlsHttpProxy::headerCallback);

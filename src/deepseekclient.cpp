@@ -103,7 +103,7 @@ void DeepSeekClient::polishText(const QString &text)
                 }
             }
             emit polishFinished(resultText);
-        });
+        }, m_apiKey);
 
     LOG_INFO("发送DeepSeek润色请求");
 }
