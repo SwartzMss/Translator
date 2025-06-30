@@ -403,6 +403,16 @@ void MainWindow::onPolishClicked()
 
     m_polisher->setApiKey(apiKey);
 
+    // 获取代理配置
+    bool proxyEnabled = m_proxyEnableCheck->isChecked();
+    QString proxyHost = proxyEnabled ? m_proxyHostEdit->text().trimmed() : QString();
+    int proxyPort = proxyEnabled ? m_proxyPortEdit->text().trimmed().toInt() : 0;
+    QString proxyUser = proxyEnabled ? m_proxyUserEdit->text().trimmed() : QString();
+    QString proxyPassword = proxyEnabled ? m_proxyPasswordEdit->text().trimmed() : QString();
+    QString caCertPath = proxyEnabled ? m_caCertPathEdit->text().trimmed() : QString();
+    m_polisher->setProxy(proxyHost, proxyPort, proxyUser, proxyPassword, caCertPath);
+    m_polisher->addCaCertificate(caCertPath);
+
     m_polishButton->setEnabled(false);
     m_polishButton->setText("润色中...");
     m_translateButton->setEnabled(false);
@@ -497,6 +507,16 @@ void MainWindow::onTestApiClicked()
     
     // 临时设置API密钥进行测试
     m_translator->setApiCredentials(appId, secretKey);
+    
+    // 获取代理配置
+    bool proxyEnabled = m_proxyEnableCheck->isChecked();
+    QString proxyHost = proxyEnabled ? m_proxyHostEdit->text().trimmed() : QString();
+    int proxyPort = proxyEnabled ? m_proxyPortEdit->text().trimmed().toInt() : 0;
+    QString proxyUser = proxyEnabled ? m_proxyUserEdit->text().trimmed() : QString();
+    QString proxyPassword = proxyEnabled ? m_proxyPasswordEdit->text().trimmed() : QString();
+    QString caCertPath = proxyEnabled ? m_caCertPathEdit->text().trimmed() : QString();
+    m_translator->setProxy(proxyHost, proxyPort, proxyUser, proxyPassword);
+    m_translator->addCaCertificate(caCertPath);
     
     // 开始测试翻译
     m_testApiButton->setEnabled(false);

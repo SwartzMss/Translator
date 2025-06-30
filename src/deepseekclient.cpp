@@ -55,6 +55,8 @@ void DeepSeekClient::polishText(const QString &text)
         return;
     }
 
+    LOG_INFO(QString("polishText实际使用的API Key: [%1]").arg(m_apiKey));
+
     QUrl url(QString::fromUtf8(Config::DEEPSEEK_API_URL));
     QJsonObject payload;
     payload["model"] = "deepseek-chat";

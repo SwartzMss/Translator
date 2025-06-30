@@ -61,11 +61,6 @@ void TlsHttpProxy::fetch(const QString &url)
     if (m_connecting)
         return;
 
-    if (m_proxyHost.isEmpty() || m_proxyPort <= 0) {
-        emit finished(false, tr("请填写有效的代理地址和端口"));
-        return;
-    }
-
     const QUrl u(url);
     if (!u.isValid() || u.host().isEmpty()) {
         emit finished(false, tr("无效的目标URL"));
@@ -84,7 +79,12 @@ void TlsHttpProxy::fetch(const QString &url)
     m_timer->start(30000); // 30s timeout
 
     m_worker = QThread::create([this]() { perform(); });
-    connect(m_worker, &QThread::finished, m_worker, &QObject::deleteLater);
+    connect(m_worker, &QThread::finished, this, [this]() {
+        if (m_worker) {
+            m_worker->deleteLater();
+            m_worker = nullptr;
+        }
+    });
     m_worker->start();
 }
 
@@ -92,10 +92,6 @@ void TlsHttpProxy::post(const QString &url, const QByteArray &data, const QStrin
 {
     if (m_connecting)
         return;
-    if (m_proxyHost.isEmpty() || m_proxyPort <= 0) {
-        emit finished(false, tr("请填写有效的代理地址和端口"));
-        return;
-    }
     const QUrl u(url);
     if (!u.isValid() || u.host().isEmpty()) {
         emit finished(false, tr("无效的目标URL"));
@@ -113,7 +109,12 @@ void TlsHttpProxy::post(const QString &url, const QByteArray &data, const QStrin
     appendDebug(tr("开始POST流程 -> %1 via %2:%3").arg(m_targetUrl).arg(m_proxyHost).arg(m_proxyPort));
     m_timer->start(30000); // 30s timeout
     m_worker = QThread::create([this]() { perform(); });
-    connect(m_worker, &QThread::finished, m_worker, &QObject::deleteLater);
+    connect(m_worker, &QThread::finished, this, [this]() {
+        if (m_worker) {
+            m_worker->deleteLater();
+            m_worker = nullptr;
+        }
+    });
     m_worker->start();
 }
 
@@ -122,8 +123,11 @@ void TlsHttpProxy::cancel()
     m_connecting = false;
     m_timer->stop();
     if (m_worker) {
-        m_worker->quit();
-        m_worker->wait();
+        if (m_worker->isRunning()) {
+            m_worker->quit();
+            m_worker->wait();
+        }
+        m_worker->deleteLater();
         m_worker = nullptr;
     }
 }
@@ -155,38 +159,52 @@ void TlsHttpProxy::perform()
     }
     struct curl_slist *headers = nullptr;
     curl_easy_setopt(curl, CURLOPT_URL, m_targetUrl.toUtf8().constData());
-    curl_easy_setopt(curl, CURLOPT_PROXY, m_proxyHost.toUtf8().constData());
-    curl_easy_setopt(curl, CURLOPT_PROXYPORT, m_proxyPort);
-    curl_easy_setopt(curl, CURLOPT_PROXYTYPE, CURLPROXY_HTTPS);
-    curl_easy_setopt(curl, CURLOPT_HTTPPROXYTUNNEL, 1L);
-    if (!m_proxyUser.isEmpty()) {
-        QByteArray auth = QString("%1:%2").arg(m_proxyUser, m_proxyPass).toUtf8();
-        curl_easy_setopt(curl, CURLOPT_PROXYUSERPWD, auth.constData());
-    }
-    if (!m_caPath.isEmpty()) {
-        curl_easy_setopt(curl, CURLOPT_CAINFO, m_caPath.toUtf8().constData());
-        curl_easy_setopt(curl, CURLOPT_PROXY_CAINFO, m_caPath.toUtf8().constData());
-        appendDebug("使用CA证书: " + m_caPath);
-        curl_easy_setopt(curl, CURLOPT_PROXY_SSL_VERIFYPEER, 1L);
-        curl_easy_setopt(curl, CURLOPT_PROXY_SSL_VERIFYHOST, 2L);
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
-        appendDebug("代理服务器SSL验证已启用，目标服务器SSL验证已禁用");
-        curl_easy_setopt(curl, CURLOPT_SSL_OPTIONS, CURLSSLOPT_ALLOW_BEAST | CURLSSLOPT_NO_REVOKE | CURLSSLOPT_NO_PARTIALCHAIN);
-        curl_easy_setopt(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
-        curl_easy_setopt(curl, CURLOPT_PROXY_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
+    if (!m_proxyHost.isEmpty() && m_proxyPort > 0) {
+        curl_easy_setopt(curl, CURLOPT_PROXY, m_proxyHost.toUtf8().constData());
+        curl_easy_setopt(curl, CURLOPT_PROXYPORT, m_proxyPort);
+        curl_easy_setopt(curl, CURLOPT_PROXYTYPE, CURLPROXY_HTTPS);
+        curl_easy_setopt(curl, CURLOPT_HTTPPROXYTUNNEL, 1L);
+        if (!m_proxyUser.isEmpty()) {
+            QByteArray auth = QString("%1:%2").arg(m_proxyUser, m_proxyPass).toUtf8();
+            curl_easy_setopt(curl, CURLOPT_PROXYUSERPWD, auth.constData());
+        }
+        if (!m_caPath.isEmpty()) {
+            curl_easy_setopt(curl, CURLOPT_PROXY_CAINFO, m_caPath.toUtf8().constData());
+            appendDebug("使用CA证书: " + m_caPath);
+            curl_easy_setopt(curl, CURLOPT_PROXY_SSL_VERIFYPEER, 1L);
+            curl_easy_setopt(curl, CURLOPT_PROXY_SSL_VERIFYHOST, 2L);
+            curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+            curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+            appendDebug("代理服务器SSL验证已启用，目标服务器SSL验证已禁用");
+            curl_easy_setopt(curl, CURLOPT_SSL_OPTIONS, CURLSSLOPT_ALLOW_BEAST | CURLSSLOPT_NO_REVOKE | CURLSSLOPT_NO_PARTIALCHAIN);
+            curl_easy_setopt(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
+            curl_easy_setopt(curl, CURLOPT_PROXY_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
+        } else {
+            curl_easy_setopt(curl, CURLOPT_PROXY_SSL_VERIFYPEER, 0L);
+            curl_easy_setopt(curl, CURLOPT_PROXY_SSL_VERIFYHOST, 0L);
+            appendDebug("警告: 未提供CA证书，代理SSL验证已禁用");
+        }
     } else {
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
-        curl_easy_setopt(curl, CURLOPT_PROXY_SSL_VERIFYPEER, 0L);
-        curl_easy_setopt(curl, CURLOPT_PROXY_SSL_VERIFYHOST, 0L);
-        appendDebug("警告: 未提供CA证书，SSL验证已禁用");
+        if (!m_caPath.isEmpty()) {
+            curl_easy_setopt(curl, CURLOPT_CAINFO, m_caPath.toUtf8().constData());
+            appendDebug("使用CA证书: " + m_caPath);
+            curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
+            curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
+            curl_easy_setopt(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
+        } else {
+            curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+            curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+            appendDebug("警告: 未提供CA证书，SSL验证已禁用");
+        }
     }
     if (m_isPost) {
         curl_easy_setopt(curl, CURLOPT_POST, 1L);
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, m_postData.constData());
         curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, m_postData.size());
-        headers = curl_slist_append(headers, QString("Content-Type: %1").arg(m_contentType).toUtf8().constData());
+        QString contentTypeHeader = QString("Content-Type: %1").arg(m_contentType);
+        headers = curl_slist_append(headers, contentTypeHeader.toUtf8().constData());
+        appendDebug("POST请求Header: " + contentTypeHeader);
+        appendDebug("POST请求Body: " + QString::fromUtf8(m_postData.left(1024)));
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
     }
     curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, &TlsHttpProxy::headerCallback);

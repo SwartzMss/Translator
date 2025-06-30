@@ -67,6 +67,9 @@ INCLUDEPATH += src
 INCLUDEPATH += $$PWD/depend/libcurl/include
 LIBS += $$PWD/depend/libcurl/lib/libcurl.lib
 
+# Windows specific configuration
+win32:LIBS += -ldbghelp
+
 # 输出信息
 message(构建目标: $$TARGET)
 message(输出目录: $$DESTDIR)
