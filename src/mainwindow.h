@@ -11,11 +11,9 @@
 #include <QMessageBox>
 #include <QSettings>
 #include <QLineEdit>
-#include <QCheckBox>
 #include <QSystemTrayIcon>
 #include <QMenu>
 #include <QAction>
-#include <QDialog>
 #include "translator.h"
 #include "deepseekclient.h"
 
@@ -43,14 +41,12 @@ private slots:
     void onTranslationError(const QString &errorMessage);
     void onPolishFinished(const QString &polishedText);
     void onPolishError(const QString &errorMessage);
+    void onSetApiClicked();
     void onTestApiClicked();
     void onSwapLanguagesClicked();
     void onTrayActivated(QSystemTrayIcon::ActivationReason reason);
     void onShowTriggered();
     void onExitTriggered();
-    void onBrowseCertClicked();
-    void onSettingsClicked();
-    void onSettingsOkClicked();
 
 private:
     void setupUi();
@@ -63,8 +59,6 @@ private:
     void showError(const QString &message);
     void showInfo(const QString &message);
     void createTrayIcon();
-    void createSettingsDialog();
-    void applyProxyFromEnvironment();
 
     // UI组件
     QWidget *m_centralWidget;
@@ -93,29 +87,12 @@ private:
     QLabel *m_polishOutputLabel;
     QTextEdit *m_polishOutputEdit;
     
-    // 设置按钮
-    QPushButton *m_settingsButton;
-    
-    // 设置对话框
-    QDialog *m_settingsDialog;
-    QTabWidget *m_settingsTabWidget;
-    
-    // API配置Tab组件
-    QWidget *m_apiTab;
+    // API配置区域
     QLineEdit *m_appIdEdit;
     QLineEdit *m_secretKeyEdit;
     QLineEdit *m_deepSeekKeyEdit;
+    QPushButton *m_setApiButton;
     QPushButton *m_testApiButton;
-    
-    // 代理设置Tab组件
-    QWidget *m_proxyTab;
-    QCheckBox *m_proxyEnableCheck;
-    QLineEdit *m_proxyHostEdit;
-    QLineEdit *m_proxyPortEdit;
-    QLineEdit *m_proxyUserEdit;
-    QLineEdit *m_proxyPasswordEdit;
-    QLineEdit *m_caCertPathEdit;
-    QPushButton *m_browseCertButton;
     
     // 状态栏
     QProgressBar *m_progressBar;
