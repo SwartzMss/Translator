@@ -5,15 +5,9 @@
 #include "mainwindow.h"
 #include "config.h"
 #include "logger.h"
-#ifdef Q_OS_WIN
-#include "crashhandler.h"
-#endif
 
 int main(int argc, char *argv[])
 {
-#ifdef Q_OS_WIN
-    SetUnhandledExceptionFilter(TopLevelExceptionHandler);
-#endif
     QApplication app(argc, argv);
 
     // 单实例检查
