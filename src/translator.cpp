@@ -2,16 +2,14 @@
 #include "config.h"
 #include "logger.h"
 #include <QNetworkRequest>
-#include <QUrl>
 #include <QUrlQuery>
-#include <QDateTime>
 #include <QCryptographicHash>
 #include <QJsonParseError>
 #include <QDebug>
-#include "networkmanager.h"
 
 Translator::Translator(QObject *parent)
     : QObject(parent)
+    , m_networkManager(new QNetworkAccessManager(this))
 {
     LOG_INFO("翻译器初始化完成");
 }
@@ -32,21 +30,6 @@ void Translator::setApiCredentials(const QString &appId, const QString &secretKe
 bool Translator::isApiConfigured() const
 {
     return !m_appId.isEmpty() && !m_secretKey.isEmpty();
-}
-
-void Translator::setNetworkProxy(const QString &host, quint16 port,
-                                 const QString &user,
-                                 const QString &password)
-{
-    m_proxyHost = host;
-    m_proxyPort = port;
-    m_proxyUser = user;
-    m_proxyPassword = password;
-}
-
-void Translator::addCaCertificate(const QString &certPath)
-{
-    m_caPath = certPath;
 }
 
 void Translator::translateText(const QString &text, const QString &fromLang, const QString &toLang)
@@ -83,15 +66,25 @@ void Translator::translateText(const QString &text, const QString &fromLang, con
     query.addQueryItem("salt", salt);
     query.addQueryItem("sign", sign);
     url.setQuery(query);
-    QString urlStr = url.toString();
-    NetworkManager::instance()->get(urlStr, m_proxyHost, m_proxyPort, m_proxyUser, m_proxyPassword, m_caPath,
-        [this](bool ok, const QByteArray &data) {
-            if (!ok) {
-                emit translationError(QString::fromUtf8(data));
-                return;
-            }
-            parseTranslationResult(data);
-        });
+
+    QString params = query.toString();
+    LOG_DEBUG(QString("API调用 - URL: %1, 参数长度: %2")
+              .arg(url.toString()).arg(params.length()));
+
+    QNetworkRequest request(url);
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
+
+    QNetworkReply *reply = m_networkManager->get(request);
+    
+    // 使用lambda表达式处理网络响应
+    connect(reply, &QNetworkReply::finished, [this, reply]() {
+        this->onTranslationFinished(reply);
+    });
+    
+    connect(reply, &QNetworkReply::errorOccurred,
+            this, &Translator::onNetworkError);
+            
+    LOG_INFO("网络请求已发送");
 }
 
 QString Translator::generateSignature(const QString &query, const QString &salt, 
@@ -153,26 +146,22 @@ void Translator::onNetworkError(QNetworkReply::NetworkError error)
         errorMsg = "请求超时";
         break;
     default:
-        errorMsg = reply->errorString();
+        errorMsg = "网络错误: " + reply->errorString();
         break;
     }
 
-    QString fullMsg = QStringLiteral("网络错误: %1").arg(errorMsg);
-    LOG_ERROR(fullMsg);
-    emit translationError(fullMsg);
+    LOG_ERROR(QString("网络错误: %1").arg(errorMsg));
+    emit translationError(errorMsg);
 }
 
 void Translator::parseTranslationResult(const QByteArray &data)
 {
-    // 新增：打印原始响应内容
-    LOG_DEBUG(QString("原始API响应内容: %1").arg(QString::fromUtf8(data.left(512))));
     QJsonParseError parseError;
     QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
     
     if (parseError.error != QJsonParseError::NoError) {
         QString errorMsg = "解析响应数据失败: " + parseError.errorString();
-        // 新增：解析失败时也输出原始内容
-        LOG_ERROR(QString("翻译失败: %1, 原始内容: %2").arg(errorMsg).arg(QString::fromUtf8(data.left(512))));
+        LOG_ERROR(QString("翻译失败: %1").arg(errorMsg));
         emit translationError(errorMsg);
         return;
     }

@@ -68,7 +68,6 @@ private:
     bool m_logToFile;
     bool m_logToConsole;
     
-    
     QString m_logFilePath;
     qint64 m_currentLogSize;
 };
